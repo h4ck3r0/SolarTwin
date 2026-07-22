@@ -161,7 +161,7 @@ export default function SimulationResults({
               unit={` ${activeTabConfig.unit}`}
             />
             <Tooltip
-              contentStyle={{ backgroundColor: '#060b13', borderColor: '#00f0ff', borderRadius: '6px', shadow: '0 0 10px rgba(0,240,255,0.2)' }}
+              contentStyle={{ backgroundColor: '#060b13', borderColor: '#00f0ff', borderRadius: '6px', boxShadow: '0 0 10px rgba(0,240,255,0.2)' }}
               labelStyle={{ fontSize: 11, color: '#00f0ff', fontFamily: 'monospace', fontWeight: 'bold' }}
               itemStyle={{ fontSize: 11, color: '#fbbf24', fontFamily: 'monospace' }}
               labelFormatter={(lbl) => `Solver Time: ${(lbl * 1000).toFixed(2)} ms`}
