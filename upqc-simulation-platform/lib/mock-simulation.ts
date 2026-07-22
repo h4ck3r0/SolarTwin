@@ -123,18 +123,35 @@ export class MockSimulationService implements SimulationService {
       const supplyVoltageB = gridVoltageB + injectingVoltageB;
       const supplyVoltageC = gridVoltageC + injectingVoltageC;
 
-      // 7. DC Link Voltage
+      // 7. Solar PV Array (5 Panels x 305W = 1525W Total Capacity)
+      const panelCount = params.solarPanelCount ?? 5;
+      const panelRatingWatts = params.solarPanelWatts ?? 305;
+      const totalPvCapacityWatts = panelCount * panelRatingWatts; // 1525 W
+      
+      const irradianceFactor = Math.max(0, params.solarIrradiance / 1000);
+      const solarPowerWatts = totalPvCapacityWatts * irradianceFactor;
+      
+      // 5 panels in series: Vmp per panel ~32.7V => 163.5V DC nominal string Vmp
+      // Subtle transient voltage ramp-up in first 10ms
+      const vPvNominal = panelCount * 32.7; // 163.5 V
+      const vPvActive = solarPowerWatts > 0 ? vPvNominal * Math.min(1.0, t / 0.01) : 0;
+      const solarVoltageDc = Math.round(vPvActive * 10) / 10;
+      
+      // I_pv = P_pv / V_pv
+      const solarCurrentDc = solarVoltageDc > 0 ? Math.round((solarPowerWatts / solarVoltageDc) * 100) / 100 : 0;
+
+      // 8. DC Link Voltage
       // DC link voltage starts with a transient and settles to the target value.
       // Influenced by microgrid generation: Solar Irradiance, Wind Speed, Battery SOC
       const vDcTarget = params.dcLinkVoltage;
       const vDcInitial = 580; // starting pre-charged level
       
       // Solar and wind power contribution reduces the time constant of charging and raises the steady-state slightly
-      const solarPowerFactor = params.solarIrradiance / 1000; // 0 to 1+
+      const solarPowerFactor = (solarPowerWatts / 1000); // in kW (1.525 kW max)
       const windPowerFactor = params.windSpeed / 12; // 0 to 1.5
       const batteryFactor = params.batterySOC / 100; // 0 to 1
       
-      const totalMgPower = (solarPowerFactor * 15) + (windPowerFactor * 10) + (batteryFactor * 5); // kW mock
+      const totalMgPower = solarPowerFactor + (windPowerFactor * 10) + (batteryFactor * 5); // kW
       
       // Time constant (tau) represents charging speed. More microgrid power = faster charging
       const tau = 0.015 / (1 + totalMgPower * 0.02); 
@@ -170,6 +187,9 @@ export class MockSimulationService implements SimulationService {
         injectingCurrentB: Math.round(injectingCurrentB * 100) / 100,
         injectingCurrentC: Math.round(injectingCurrentC * 100) / 100,
         dcLinkVoltage: Math.round(dcLinkVoltage * 10) / 10,
+        solarPowerWatts: Math.round(solarPowerWatts * 10) / 10,
+        solarVoltageDc,
+        solarCurrentDc,
       });
     }
 

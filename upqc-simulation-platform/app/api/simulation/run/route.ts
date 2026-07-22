@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
       gridRs: Number(body.gridRs ?? 0.1),
       gridLs: Number(body.gridLs ?? 0.001),
       solarIrradiance: Number(body.solarIrradiance ?? 1000),
+      solarPanelCount: Number(body.solarPanelCount ?? 5),
+      solarPanelWatts: Number(body.solarPanelWatts ?? 305),
       windSpeed: Number(body.windSpeed ?? 12),
       batterySOC: Number(body.batterySOC ?? 80),
       dcLinkVoltage: Number(body.dcLinkVoltage ?? 700),

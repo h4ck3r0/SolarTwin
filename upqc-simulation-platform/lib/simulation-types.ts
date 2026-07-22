@@ -7,6 +7,8 @@ export interface SimulationParameters {
 
   // Microgrid parameters
   solarIrradiance: number; // W/m^2
+  solarPanelCount?: number; // default: 5
+  solarPanelWatts?: number; // default: 305 W
   windSpeed: number; // m/s
   batterySOC: number; // %
   dcLinkVoltage: number; // V (target DC voltage)
@@ -56,6 +58,11 @@ export interface SimulationDataPoint {
   
   // DC link voltage (V)
   dcLinkVoltage: number;
+
+  // Solar PV output telemetry
+  solarPowerWatts: number;
+  solarVoltageDc: number;
+  solarCurrentDc: number;
 }
 
 export interface SimulationResult {

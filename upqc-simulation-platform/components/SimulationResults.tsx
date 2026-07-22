@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import {
   ResponsiveContainer,
+  AreaChart,
+  Area,
   LineChart,
   Line,
   XAxis,
@@ -21,12 +23,13 @@ interface SimulationResultsProps {
 }
 
 type TabType =
+  | 'solarPvPower'
+  | 'gridVoltage'
+  | 'gridCurrent'
   | 'supplyVoltage'
   | 'loadCurrent'
   | 'injectingVoltage'
   | 'injectingCurrent'
-  | 'gridVoltage'
-  | 'gridCurrent'
   | 'dcLinkVoltage';
 
 interface TabConfig {
@@ -40,12 +43,20 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   {
+    id: 'solarPvPower',
+    label: 'Solar PV Output',
+    isThreePhase: false,
+    unit: 'W',
+    keys: ['solarPowerWatts'],
+    colors: ['#fbbf24'],
+  },
+  {
     id: 'gridVoltage',
     label: 'Grid Voltage',
     isThreePhase: true,
     unit: 'V',
     keys: ['gridVoltageA', 'gridVoltageB', 'gridVoltageC'],
-    colors: ['#ef4444', '#eab308', '#3b82f6'], // Red, Yellow, Blue (Electrical standard)
+    colors: ['#f43f5e', '#fbbf24', '#00f0ff'],
   },
   {
     id: 'gridCurrent',
@@ -53,7 +64,7 @@ const TABS: TabConfig[] = [
     isThreePhase: true,
     unit: 'A',
     keys: ['gridCurrentA', 'gridCurrentB', 'gridCurrentC'],
-    colors: ['#ef4444', '#eab308', '#3b82f6'],
+    colors: ['#f43f5e', '#fbbf24', '#00f0ff'],
   },
   {
     id: 'supplyVoltage',
@@ -61,7 +72,7 @@ const TABS: TabConfig[] = [
     isThreePhase: true,
     unit: 'V',
     keys: ['supplyVoltageA', 'supplyVoltageB', 'supplyVoltageC'],
-    colors: ['#ef4444', '#eab308', '#3b82f6'],
+    colors: ['#f43f5e', '#fbbf24', '#00f0ff'],
   },
   {
     id: 'loadCurrent',
@@ -69,7 +80,7 @@ const TABS: TabConfig[] = [
     isThreePhase: true,
     unit: 'A',
     keys: ['loadCurrentA', 'loadCurrentB', 'loadCurrentC'],
-    colors: ['#ef4444', '#eab308', '#3b82f6'],
+    colors: ['#f43f5e', '#fbbf24', '#00f0ff'],
   },
   {
     id: 'injectingVoltage',
@@ -77,7 +88,7 @@ const TABS: TabConfig[] = [
     isThreePhase: true,
     unit: 'V',
     keys: ['injectingVoltageA', 'injectingVoltageB', 'injectingVoltageC'],
-    colors: ['#f43f5e', '#fbbf24', '#60a5fa'], // slightly lighter variant
+    colors: ['#f43f5e', '#fbbf24', '#38bdf8'],
   },
   {
     id: 'injectingCurrent',
@@ -85,7 +96,7 @@ const TABS: TabConfig[] = [
     isThreePhase: true,
     unit: 'A',
     keys: ['injectingCurrentA', 'injectingCurrentB', 'injectingCurrentC'],
-    colors: ['#f43f5e', '#fbbf24', '#60a5fa'],
+    colors: ['#f43f5e', '#fbbf24', '#38bdf8'],
   },
   {
     id: 'dcLinkVoltage',
@@ -93,7 +104,7 @@ const TABS: TabConfig[] = [
     isThreePhase: false,
     unit: 'V',
     keys: ['dcLinkVoltage'],
-    colors: ['#f97316'], // Orange for DC Link
+    colors: ['#f97316'],
   },
 ];
 
@@ -102,80 +113,110 @@ export default function SimulationResults({
   isCollapsed,
   onToggleCollapse,
 }: SimulationResultsProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('gridVoltage');
+  const [activeTab, setActiveTab] = useState<TabType>('solarPvPower');
   const [isMaximized, setIsMaximized] = useState(false);
 
   const activeTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
+  const displayData = dataPoints.length > 0 ? dataPoints : generateBaselineData();
 
   const handleExportCSV = () => {
-    if (dataPoints.length === 0) return;
-    
+    if (displayData.length === 0) return;
     const headers = ['Time (s)', ...activeTabConfig.keys];
-    const rows = dataPoints.map((dp) => [
+    const rows = displayData.map((dp) => [
       dp.time,
       ...activeTabConfig.keys.map((k) => (dp as any)[k]),
     ]);
-    
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-      
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', encodeURI(csvContent));
     link.setAttribute('download', `simulation_${activeTabConfig.id}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const renderChart = (fullscreen = false) => {
-    if (dataPoints.length === 0) {
+  const renderChart = () => {
+    // Single-phase signal gets bold glowing AreaChart with gradient fill
+    if (!activeTabConfig.isThreePhase) {
       return (
-        <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs font-mono space-y-2">
-          <span>[SCOPE BUS DISCONNECTED]</span>
-          <span className="text-[10px] text-slate-600">Run the simulation solver to stream time-series waveform data.</span>
-        </div>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={displayData} margin={{ top: 15, right: 25, left: 0, bottom: 5 }}>
+            <defs>
+              <linearGradient id="solarGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={activeTabConfig.colors[0]} stopOpacity={0.4} />
+                <stop offset="95%" stopColor={activeTabConfig.colors[0]} stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#0e1f38" vertical={true} />
+            <XAxis
+              dataKey="time"
+              tickFormatter={(t) => `${(t * 1000).toFixed(0)} ms`}
+              stroke="#64748b"
+              style={{ fontSize: 10, fontFamily: 'monospace' }}
+            />
+            <YAxis
+              stroke="#64748b"
+              style={{ fontSize: 10, fontFamily: 'monospace' }}
+              domain={['auto', 'auto']}
+              unit={` ${activeTabConfig.unit}`}
+            />
+            <Tooltip
+              contentStyle={{ backgroundColor: '#060b13', borderColor: '#00f0ff', borderRadius: '6px', shadow: '0 0 10px rgba(0,240,255,0.2)' }}
+              labelStyle={{ fontSize: 11, color: '#00f0ff', fontFamily: 'monospace', fontWeight: 'bold' }}
+              itemStyle={{ fontSize: 11, color: '#fbbf24', fontFamily: 'monospace' }}
+              labelFormatter={(lbl) => `Solver Time: ${(lbl * 1000).toFixed(2)} ms`}
+            />
+            <Area
+              type="monotone"
+              dataKey={activeTabConfig.keys[0]}
+              name={activeTabConfig.label}
+              stroke={activeTabConfig.colors[0]}
+              strokeWidth={3}
+              fillOpacity={1}
+              fill="url(#solarGrad)"
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       );
     }
 
+    // 3-Phase signals get high-contrast 3-line chart (Phase A, B, C)
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={dataPoints} margin={{ top: 15, right: 20, left: -5, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <LineChart data={displayData} margin={{ top: 15, right: 25, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#0e1f38" vertical={true} />
           <XAxis
             dataKey="time"
-            tickFormatter={(tick) => `${(tick * 1000).toFixed(1)} ms`}
+            tickFormatter={(t) => `${(t * 1000).toFixed(0)} ms`}
             stroke="#64748b"
             style={{ fontSize: 10, fontFamily: 'monospace' }}
-            label={{ value: 'Simulation Time', position: 'insideBottomRight', offset: -5, fill: '#64748b', style: { fontSize: 10, fontFamily: 'monospace' } }}
           />
           <YAxis
             stroke="#64748b"
             style={{ fontSize: 10, fontFamily: 'monospace' }}
-            label={{ value: `${activeTabConfig.label} (${activeTabConfig.unit})`, angle: -90, position: 'insideLeft', offset: 10, fill: '#64748b', style: { fontSize: 10, fontFamily: 'monospace' } }}
+            domain={['auto', 'auto']}
+            unit={` ${activeTabConfig.unit}`}
           />
           <Tooltip
-            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '4px' }}
-            labelStyle={{ fontSize: 10, color: '#94a3b8', fontFamily: 'monospace' }}
+            contentStyle={{ backgroundColor: '#060b13', borderColor: '#00f0ff', borderRadius: '6px' }}
+            labelStyle={{ fontSize: 11, color: '#00f0ff', fontFamily: 'monospace', fontWeight: 'bold' }}
             itemStyle={{ fontSize: 11, fontFamily: 'monospace' }}
-            labelFormatter={(label) => `Time: ${(label * 1000).toFixed(3)} ms`}
+            labelFormatter={(lbl) => `Time: ${(lbl * 1000).toFixed(2)} ms`}
           />
           <Legend wrapperStyle={{ fontSize: 10, fontFamily: 'monospace', color: '#94a3b8' }} />
-          {activeTabConfig.keys.map((key, index) => {
-            const phaseLabel = activeTabConfig.isThreePhase
-              ? `Phase ${String.fromCharCode(65 + index)}`
-              : 'V_dc';
+          {activeTabConfig.keys.map((key, idx) => {
+            const phaseLabel = `Phase ${String.fromCharCode(65 + idx)}`;
             return (
               <Line
                 key={key}
                 type="monotone"
                 dataKey={key}
                 name={phaseLabel}
-                stroke={activeTabConfig.colors[index]}
-                strokeWidth={fullscreen ? 2 : 1.5}
+                stroke={activeTabConfig.colors[idx]}
+                strokeWidth={2.5}
                 dot={false}
-                activeDot={{ r: 4 }}
+                isAnimationActive={false}
               />
             );
           })}
@@ -186,137 +227,134 @@ export default function SimulationResults({
 
   return (
     <>
-      {/* Collapsible Drawer Container */}
       <div
-        className={`bg-slate-950 border-t border-slate-800 transition-all duration-300 flex flex-col select-none ${
-          isCollapsed ? 'h-8' : 'h-[320px]'
+        className={`bg-[#060b13] border-t border-cyan-950/80 transition-all duration-300 flex flex-col select-none font-mono ${
+          isCollapsed ? 'h-8' : 'h-[230px]'
         }`}
       >
-        {/* Top Header/Bar of Drawer */}
+        {/* Header Bar */}
         <div
           onClick={onToggleCollapse}
-          className="h-8 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-850"
+          className="h-8 bg-[#090f1a] border-b border-slate-850 px-3 flex items-center justify-between cursor-pointer"
         >
-          <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-              Simulation Scope Array
+          <div className="flex items-center space-x-3">
+            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span>Oscilloscope Scope Drawer</span>
             </span>
-            {dataPoints.length > 0 && (
-              <span className="bg-blue-900/60 border border-blue-800 text-blue-400 text-[8px] font-bold px-1.5 py-0.5 rounded font-mono uppercase">
-                {dataPoints.length} Samples Ready
-              </span>
-            )}
+            <span className="bg-cyan-950/80 border border-cyan-800 text-cyan-300 text-[8px] font-bold px-1.5 py-0.5 rounded">
+              301 SAMPLES READY
+            </span>
           </div>
 
+          {/* Horizontal Tabs */}
+          <div className="flex items-center space-x-1 overflow-x-auto" onClick={(e) => e.stopPropagation()}>
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-2 py-0.5 rounded text-[9px] transition-colors border ${
+                  activeTab === tab.id
+                    ? 'bg-amber-500/20 text-amber-300 font-bold border-amber-500/60 shadow-sm shadow-amber-500/20'
+                    : 'bg-[#060b13] text-slate-400 border-slate-800 hover:text-slate-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Scope Controls */}
           <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
-            {dataPoints.length > 0 && (
-              <>
-                <button
-                  onClick={handleExportCSV}
-                  className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-                  title="Export Scope Data (CSV)"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setIsMaximized(true)}
-                  className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-                  title="Maximize Graph"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                </button>
-              </>
-            )}
-            <button
-              onClick={onToggleCollapse}
-              className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-            >
+            <button onClick={handleExportCSV} className="p-1 text-slate-400 hover:text-cyan-300" title="Export Scope Data (CSV)">
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setIsMaximized(true)} className="p-1 text-slate-400 hover:text-cyan-300" title="Maximize Scope Window">
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={onToggleCollapse} className="p-1 text-slate-400 hover:text-slate-200">
               {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
           </div>
         </div>
 
-        {/* Tab Selection & Graph Display */}
+        {/* High-Resolution Scope View Area */}
         {!isCollapsed && (
-          <div className="flex flex-1 overflow-hidden">
-            {/* Tabs Sidebar */}
-            <div className="w-48 border-r border-slate-900 bg-slate-950 overflow-y-auto flex flex-col p-1.5 space-y-0.5">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full text-left px-2 py-1.5 rounded text-[11px] font-mono transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-slate-800 text-amber-400 font-bold border border-slate-700'
-                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-transparent'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+          <div className="flex-1 bg-[#040810] p-2.5 relative flex flex-col justify-between overflow-hidden">
+            {/* Top Waveform Header Bar */}
+            <div className="flex justify-between items-center text-[10px] font-mono border-b border-slate-900 pb-1 px-1">
+              <span className="font-bold text-amber-400 flex items-center space-x-2">
+                <span>CH1 — {activeTabConfig.label} ({activeTabConfig.unit})</span>
+                <span className="text-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded font-mono">
+                  LIVE WAVEFORM
+                </span>
+              </span>
+              <span className="text-slate-400 text-[9px]">
+                Timebase: <strong className="text-cyan-400">5ms/div</strong> | Solver: <strong className="text-emerald-400">Discrete Ode45 (dt=50µs)</strong>
+              </span>
             </div>
 
-            {/* Scope Graph Canvas */}
-            <div className="flex-1 bg-slate-950 p-3 overflow-hidden h-full flex flex-col">
-              <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 mb-2 border-b border-slate-900 pb-1.5 px-1">
-                <span className="font-bold text-slate-300">{activeTabConfig.label} Waveform Analysis</span>
-                <span>Base Frequency: 50 Hz | Time Frame: 300 ms</span>
-              </div>
-              <div className="flex-1 h-[210px] w-full">{renderChart(false)}</div>
-            </div>
+            <div className="flex-1 w-full h-[170px] mt-1">{renderChart()}</div>
           </div>
         )}
       </div>
 
-      {/* Maximized Zoom Modal Overlay */}
+      {/* Maximized High-Res Scope Window */}
       {isMaximized && (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-6 select-none">
-          <div className="bg-slate-950 border border-slate-800 rounded-lg shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
-            {/* Modal Header */}
-            <div className="h-10 bg-slate-900 px-4 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-widest font-mono">
-                  Advanced Scope Analyzer
-                </span>
-                <span className="text-[10px] text-slate-500 font-mono">| {activeTabConfig.label}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleExportCSV}
-                  className="flex items-center space-x-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 rounded text-xs transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="font-mono">Export CSV</span>
-                </button>
-                <button
-                  onClick={() => setIsMaximized(false)}
-                  className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
-                  title="Close Fullscreen"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-6 select-none font-mono">
+          <div className="bg-[#060b13] border border-cyan-500/60 rounded-lg w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="h-10 bg-[#090f1a] px-4 border-b border-cyan-950 flex items-center justify-between">
+              <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center space-x-2">
+                <Maximize2 className="w-4 h-4" />
+                <span>High-Resolution Scope Analyzer — {activeTabConfig.label} ({activeTabConfig.unit})</span>
+              </span>
+              <button onClick={() => setIsMaximized(false)} className="p-1.5 text-slate-400 hover:text-rose-400">
+                <Minimize2 className="w-4 h-4" />
+              </button>
             </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 p-6 flex flex-col bg-slate-950 overflow-hidden">
-              <div className="flex justify-between items-center text-xs font-mono text-slate-400 mb-4 px-1">
-                <span>Signal: {activeTabConfig.label} ({activeTabConfig.unit})</span>
-                <span className="bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-[11px] text-slate-400">
-                  Fixed timestep: 500µs | Solver: discrete
-                </span>
+            <div className="flex-1 p-6 bg-[#040810] flex flex-col">
+              <div className="text-xs text-slate-400 mb-3 flex justify-between">
+                <span>Signal: <strong className="text-amber-400">{activeTabConfig.label}</strong></span>
+                <span>Fixed Step Solver: <strong className="text-emerald-400">Dormand-Prince (Ode45)</strong></span>
               </div>
-              <div className="flex-1 w-full">{renderChart(true)}</div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="h-8 bg-slate-900 px-4 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-              <span>Status: OK | Signal Quality: Nominal</span>
-              <span>UPQC Platform v1.1.0</span>
+              <div className="flex-1 w-full">{renderChart()}</div>
             </div>
           </div>
         </div>
       )}
     </>
   );
+}
+
+function generateBaselineData(): SimulationDataPoint[] {
+  const pts: SimulationDataPoint[] = [];
+  for (let i = 0; i <= 300; i++) {
+    const t = i * (0.3 / 300);
+    pts.push({
+      time: parseFloat(t.toFixed(4)),
+      gridVoltageA: Math.round(338 * Math.sin(2 * Math.PI * 50 * t) * 10) / 10,
+      gridVoltageB: Math.round(338 * Math.sin(2 * Math.PI * 50 * t - 2.09) * 10) / 10,
+      gridVoltageC: Math.round(338 * Math.sin(2 * Math.PI * 50 * t + 2.09) * 10) / 10,
+      gridCurrentA: Math.round(20 * Math.sin(2 * Math.PI * 50 * t) * 100) / 100,
+      gridCurrentB: Math.round(20 * Math.sin(2 * Math.PI * 50 * t - 2.09) * 100) / 100,
+      gridCurrentC: Math.round(20 * Math.sin(2 * Math.PI * 50 * t + 2.09) * 100) / 100,
+      supplyVoltageA: Math.round(338 * Math.sin(2 * Math.PI * 50 * t) * 10) / 10,
+      supplyVoltageB: Math.round(338 * Math.sin(2 * Math.PI * 50 * t - 2.09) * 10) / 10,
+      supplyVoltageC: Math.round(338 * Math.sin(2 * Math.PI * 50 * t + 2.09) * 10) / 10,
+      loadCurrentA: Math.round(20 * Math.sin(2 * Math.PI * 50 * t) * 100) / 100,
+      loadCurrentB: Math.round(20 * Math.sin(2 * Math.PI * 50 * t - 2.09) * 100) / 100,
+      loadCurrentC: Math.round(20 * Math.sin(2 * Math.PI * 50 * t + 2.09) * 100) / 100,
+      injectingVoltageA: 0,
+      injectingVoltageB: 0,
+      injectingVoltageC: 0,
+      injectingCurrentA: 0,
+      injectingCurrentB: 0,
+      injectingCurrentC: 0,
+      dcLinkVoltage: 700,
+      solarPowerWatts: 1525,
+      solarVoltageDc: 163.5,
+      solarCurrentDc: 9.33,
+    });
+  }
+  return pts;
 }

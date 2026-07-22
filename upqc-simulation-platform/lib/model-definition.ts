@@ -10,359 +10,201 @@ export interface ElectricalNodeData {
 }
 
 export const initialNodes: Node<ElectricalNodeData>[] = [
-  // Electrical Network (Main Horizontal Path)
+  // 1. Grid Source
   {
     id: 'grid-source',
     type: 'electrical',
-    position: { x: 40, y: 150 },
+    position: { x: 50, y: 150 },
     data: {
-      label: 'Grid Source',
+      label: '3Φ GRID SOURCE',
       type: 'source',
-      details: '3-Phase AC Source, 415V LL, 50Hz',
+      details: '415V LL / 50Hz',
       parameters: {
-        'Voltage (V)': 415,
-        'Frequency (Hz)': 50,
-        'R_s (Ω)': 0.1,
-        'L_s (H)': 0.001,
+        'Rs': '0.1 Ω',
+        'Ls': '0.001 H',
       },
     },
   },
-  {
-    id: 'grid-meas',
-    type: 'electrical',
-    position: { x: 230, y: 150 },
-    data: {
-      label: 'Grid Measurement',
-      type: 'measurement',
-      details: 'V_grid, I_grid 3-Phase Scopes',
-    },
-  },
+
+  // 2. Series Transformer
   {
     id: 'series-trans',
     type: 'electrical',
-    position: { x: 420, y: 140 },
+    position: { x: 230, y: 150 },
     data: {
-      label: 'Series Transformer',
+      label: 'SERIES XFM',
       type: 'transformer',
-      details: 'Series Injection Coupling Transformer',
-      parameters: {
-        'Turns Ratio': '1:1',
-        'Power Rating (kVA)': 15,
-      },
-    },
-  },
-  {
-    id: 'load-meas',
-    type: 'electrical',
-    position: { x: 620, y: 150 },
-    data: {
-      label: 'Load Measurement',
-      type: 'measurement',
-      details: 'V_load, I_load 3-Phase PCC Scopes',
-    },
-  },
-  {
-    id: 'diode-rectifier',
-    type: 'electrical',
-    position: { x: 820, y: 240 },
-    data: {
-      label: 'Diode Rectifier',
-      type: 'load',
-      details: 'Non-linear Harmonic Load',
-      parameters: {
-        'Rectifier Type': '6-Pulse Diode',
-        'R_load (Ω)': 15,
-        'C_filter (µF)': 470,
-      },
-    },
-  },
-  {
-    id: 'linear-load',
-    type: 'electrical',
-    position: { x: 820, y: 80 },
-    data: {
-      label: 'Critical Load',
-      type: 'load',
-      details: 'Sensitive Linear Load',
-      parameters: {
-        'Active Power (kW)': 8,
-        'Reactive Power (kVAR)': 2,
-      },
+      details: '1:1 Coupling',
     },
   },
 
-  // Series APF Branch (Bottom Left)
-  {
-    id: 'series-ctrl',
-    type: 'control',
-    position: { x: 230, y: 310 },
-    data: {
-      label: 'Series APF Control',
-      type: 'control',
-      details: 'PI Voltage Sag Controller',
-      parameters: {
-        'K_p': 1.5,
-        'K_i': 120,
-        'Ref Voltage (V)': 415,
-      },
-    },
-  },
+  // 3. Series APF Inverter (Green)
   {
     id: 'series-inv',
     type: 'electrical',
-    position: { x: 420, y: 300 },
+    position: { x: 400, y: 140 },
     data: {
-      label: 'IGBT Inverter Series',
+      label: 'SERIES APF',
       type: 'inverter',
-      details: 'Series Voltage Injector (APF)',
+      details: 'PI Controller\nIGBT Inverter',
       parameters: {
-        'IGBT Count': 6,
-        'Snubber R (Ω)': 500,
+        'Kp': 1.5,
+        'Ki': 120,
       },
     },
   },
 
-  // Shunt APF Branch (Bottom Right)
-  {
-    id: 'shunt-ctrl',
-    type: 'control',
-    position: { x: 820, y: 440 },
-    data: {
-      label: 'Shunt APF Control',
-      type: 'control',
-      details: 'PI Current Harmonic Mitigator',
-      parameters: {
-        'K_p': 1.0,
-        'K_i': 85,
-      },
-    },
-  },
+  // 4. Shunt APF Inverter (Purple)
   {
     id: 'shunt-inv',
     type: 'electrical',
-    position: { x: 620, y: 300 },
+    position: { x: 580, y: 220 },
     data: {
-      label: 'IGBT Inverter Shunt',
-      type: 'inverter',
-      details: 'Shunt Current Injector (APF)',
+      label: 'SHUNT APF',
+      type: 'control',
+      details: 'PI Controller\nIGBT Inverter',
       parameters: {
-        'IGBT Count': 6,
-        'Filter L (H)': 0.003,
+        'Kp': 1.0,
+        'Ki': 85,
       },
     },
   },
 
-  // DC Link & Microgrid (Center Bottom)
+  // 5. DC Link Capacitor (Orange Bar)
   {
     id: 'dc-link',
     type: 'electrical',
-    position: { x: 520, y: 440 },
+    position: { x: 490, y: 350 },
     data: {
-      label: 'DC Link Capacitor',
+      label: 'DC LINK = 700V',
       type: 'source',
-      details: 'Shared DC Capacitor Link',
-      parameters: {
-        'Target DC (V)': 700,
-        'Capacitance (µF)': 2200,
-      },
+      details: 'Shared DC Bus',
     },
   },
+
+  // 6. Microgrid Sources (Yellow)
   {
     id: 'microgrid',
     type: 'microgrid',
-    position: { x: 520, y: 580 },
+    position: { x: 480, y: 470 },
     data: {
-      label: 'Microgrid Sources',
+      label: 'MICROGRID',
       type: 'microgrid',
-      details: 'Solar PV + Wind + Battery System',
+      details: '5×305W Solar\nWind: 8.5 m/s\nBat SOC: 78%',
       parameters: {
-        'Solar Irradiance (W/m²)': 1000,
-        'Wind Speed (m/s)': 12,
-        'Battery SOC (%)': 80,
-      },
-    },
-  },
-  {
-    id: 'dc-volt-ctrl',
-    type: 'control',
-    position: { x: 670, y: 560 },
-    data: {
-      label: 'Voltage Control',
-      type: 'control',
-      details: 'DC Link Voltage Regulator',
-      parameters: {
-        'K_p': 0.8,
-        'K_i': 15,
+        'Total PV': '1.525 kW',
       },
     },
   },
 
-  // Scopes (Visual Monitoring Nodes)
+  // 7. Critical Load (Green)
+  {
+    id: 'critical-load',
+    type: 'electrical',
+    position: { x: 740, y: 130 },
+    data: {
+      label: 'CRITICAL LOAD',
+      type: 'load',
+      details: '15kW Linear Load\nVref=230V',
+    },
+  },
+
+  // 8. Diode Rectifier Non-Linear Load (Red)
+  {
+    id: 'diode-rectifier',
+    type: 'electrical',
+    position: { x: 890, y: 130 },
+    data: {
+      label: 'DIODE RECT',
+      type: 'load',
+      details: 'Non-Linear Load\nHarmonic Source\nTHD > 28%',
+    },
+  },
+
+  // 9. Scope Monitor (Cyan)
   {
     id: 'scope-block',
     type: 'scope',
-    position: { x: 1040, y: 150 },
+    position: { x: 750, y: 320 },
     data: {
-      label: 'Scopes Monitor',
+      label: 'SCOPE MON',
       type: 'scope',
-      details: 'Multi-trace Simulation Oscilloscope',
+      details: 'Oscilloscope Tap',
     },
   },
 ];
 
 export const initialEdges: Edge[] = [
-  // Main Power Flow Path (3-Phase)
+  // Grid to Series Transformer
   {
-    id: 'e-grid-meas',
+    id: 'e-grid-xfm',
     source: 'grid-source',
-    target: 'grid-meas',
-    animated: false,
-    label: '3Φ AC',
-    style: { stroke: '#0f172a', strokeWidth: 2 },
-  },
-  {
-    id: 'e-meas-trans',
-    source: 'grid-meas',
     target: 'series-trans',
-    animated: false,
-    label: '3Φ AC',
-    style: { stroke: '#0f172a', strokeWidth: 2 },
+    animated: true,
+    style: { stroke: '#00f0ff', strokeWidth: 2 },
   },
+  // Series Transformer to Series APF
   {
-    id: 'e-trans-meas',
+    id: 'e-xfm-sinv',
     source: 'series-trans',
-    target: 'load-meas',
-    animated: false,
-    label: '3Φ AC',
-    style: { stroke: '#0f172a', strokeWidth: 2 },
-  },
-  {
-    id: 'e-meas-linear',
-    source: 'load-meas',
-    target: 'linear-load',
-    animated: false,
-    style: { stroke: '#0f172a', strokeWidth: 2 },
-  },
-  {
-    id: 'e-meas-rectifier',
-    source: 'load-meas',
-    target: 'diode-rectifier',
-    animated: false,
-    style: { stroke: '#0f172a', strokeWidth: 2 },
-  },
-
-  // Series APF Path
-  {
-    id: 'e-inv-trans',
-    source: 'series-inv',
-    target: 'series-trans',
-    animated: false,
-    label: 'V_inj',
-    style: { stroke: '#475569', strokeWidth: 1.5, strokeDasharray: '4' },
-  },
-  {
-    id: 'e-meas-sctrl',
-    source: 'grid-meas',
-    target: 'series-ctrl',
-    animated: false,
-    style: { stroke: '#2563eb', strokeWidth: 1, strokeDasharray: '3' },
-  },
-  {
-    id: 'e-sctrl-inv',
-    source: 'series-ctrl',
     target: 'series-inv',
-    animated: false,
-    label: 'PWM',
-    style: { stroke: '#2563eb', strokeWidth: 1 },
+    animated: true,
+    style: { stroke: '#00f0ff', strokeWidth: 2 },
   },
-
-  // Shunt APF Path
+  // Series APF to Shunt APF
   {
-    id: 'e-meas-shinv',
-    source: 'load-meas',
+    id: 'e-sinv-shinv',
+    source: 'series-inv',
     target: 'shunt-inv',
-    animated: false,
-    label: 'I_inj',
-    style: { stroke: '#475569', strokeWidth: 1.5, strokeDasharray: '4' },
+    animated: true,
+    style: { stroke: '#00f0ff', strokeWidth: 2 },
   },
-  {
-    id: 'e-meas-shctrl',
-    source: 'load-meas',
-    target: 'shunt-ctrl',
-    animated: false,
-    style: { stroke: '#2563eb', strokeWidth: 1, strokeDasharray: '3' },
-  },
-  {
-    id: 'e-shctrl-inv',
-    source: 'shunt-ctrl',
-    target: 'shunt-inv',
-    animated: false,
-    label: 'PWM',
-    style: { stroke: '#2563eb', strokeWidth: 1 },
-  },
-
-  // DC Link Connections
+  // Series APF down to DC Link
   {
     id: 'e-sinv-dc',
     source: 'series-inv',
     target: 'dc-link',
-    animated: false,
-    label: 'DC Link',
-    style: { stroke: '#ea580c', strokeWidth: 1.5 },
+    animated: true,
+    style: { stroke: '#f59e0b', strokeWidth: 2.5 },
   },
+  // Shunt APF down to DC Link
   {
     id: 'e-shinv-dc',
     source: 'shunt-inv',
     target: 'dc-link',
-    animated: false,
-    label: 'DC Link',
-    style: { stroke: '#ea580c', strokeWidth: 1.5 },
+    animated: true,
+    style: { stroke: '#f59e0b', strokeWidth: 2.5 },
   },
+  // Microgrid up to DC Link
   {
-    id: 'e-mg-dc',
+    id: 'e-[#00f0ff]',
     source: 'microgrid',
     target: 'dc-link',
-    animated: false,
-    label: 'Gen DC',
-    style: { stroke: '#ea580c', strokeWidth: 1.5 },
+    animated: true,
+    style: { stroke: '#f59e0b', strokeWidth: 3 },
   },
-
-  // DC Voltage Control Path
+  // Shunt APF to Critical Load
   {
-    id: 'e-dc-dcctrl',
-    source: 'dc-link',
-    target: 'dc-volt-ctrl',
-    animated: false,
-    style: { stroke: '#2563eb', strokeWidth: 1, strokeDasharray: '3' },
+    id: 'e-shinv-cload',
+    source: 'shunt-inv',
+    target: 'critical-load',
+    animated: true,
+    style: { stroke: '#10b981', strokeWidth: 2, strokeDasharray: '4' },
   },
+  // Critical Load to Diode Rectifier
   {
-    id: 'e-dcctrl-shctrl',
-    source: 'dc-volt-ctrl',
-    target: 'shunt-ctrl',
-    animated: false,
-    style: { stroke: '#2563eb', strokeWidth: 1 },
+    id: 'e-cload-diode',
+    source: 'critical-load',
+    target: 'diode-rectifier',
+    animated: true,
+    style: { stroke: '#f43f5e', strokeWidth: 2 },
   },
-
-  // Scopes Connections
+  // Scope monitor tap
   {
-    id: 'e-gmeas-scope',
-    source: 'grid-meas',
+    id: 'e-cload-scope',
+    source: 'critical-load',
     target: 'scope-block',
-    animated: false,
-    style: { stroke: '#16a34a', strokeWidth: 1, strokeDasharray: '5' },
-  },
-  {
-    id: 'e-lmeas-scope',
-    source: 'load-meas',
-    target: 'scope-block',
-    animated: false,
-    style: { stroke: '#16a34a', strokeWidth: 1, strokeDasharray: '5' },
-  },
-  {
-    id: 'e-dc-scope',
-    source: 'dc-link',
-    target: 'scope-block',
-    animated: false,
-    style: { stroke: '#16a34a', strokeWidth: 1, strokeDasharray: '5' },
+    animated: true,
+    style: { stroke: '#00f0ff', strokeWidth: 1.5, strokeDasharray: '3' },
   },
 ];

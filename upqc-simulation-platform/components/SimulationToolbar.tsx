@@ -25,118 +25,85 @@ export default function SimulationToolbar({
   onZoomOut,
   onFitView,
 }: SimulationToolbarProps) {
-  
-  const getStatusColor = (status: SimulationStatus) => {
-    switch (status) {
-      case 'RUNNING':
-        return 'bg-amber-500 text-black animate-pulse';
-      case 'COMPLETED':
-        return 'bg-emerald-600 text-white';
-      case 'FAILED':
-        return 'bg-rose-600 text-white';
-      case 'IDLE':
-      default:
-        return 'bg-slate-700 text-slate-300';
-    }
-  };
-
   return (
-    <div className="h-12 border-b border-slate-700 bg-slate-900 text-slate-100 flex items-center justify-between px-4 select-none">
+    <div className="h-8 border-b border-cyan-950 bg-[#060b13] text-slate-100 flex items-center justify-between px-2.5 select-none font-mono text-[10px]">
       {/* Title & Branding */}
-      <div className="flex items-center space-x-3">
-        <div className="flex space-x-1">
-          <span className="w-2 h-5 bg-blue-600 block rounded-sm"></span>
-          <span className="w-1.5 h-5 bg-amber-500 block rounded-sm"></span>
+      <div className="flex items-center space-x-2">
+        <div className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-400/60 flex items-center justify-center font-bold text-cyan-400 text-[9px]">
+          U
         </div>
-        <div>
-          <h1 className="text-sm font-semibold tracking-wide uppercase font-mono">
-            UPQC Power Quality Simulation
+        <div className="flex items-center space-x-1.5">
+          <h1 className="text-[10.5px] font-bold tracking-wider uppercase text-cyan-400 font-mono">
+            UPQC Solar Microgrid Platform
           </h1>
-          <span className="text-[10px] text-slate-400 block -mt-1 font-mono">
-            V1.1.0-MOCK_SOLVER
+          <span className="text-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded font-bold">
+            5× 305W PV (1.525 kW)
           </span>
         </div>
       </div>
 
       {/* Solver Controls */}
-      <div className="flex items-center space-x-1 border-l border-r border-slate-700 px-4">
+      <div className="flex items-center space-x-1.5">
         <button
           onClick={onRun}
           disabled={status === 'RUNNING'}
-          className={`flex items-center space-x-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
+          className={`flex items-center space-x-1 px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
             status === 'RUNNING'
-              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50 shadow-sm'
           }`}
-          title="Run Simulation"
         >
-          <Play className="w-3.5 h-3.5 fill-current" />
+          <Play className="w-3 h-3 fill-current" />
           <span>Run</span>
         </button>
 
         <button
           onClick={onStop}
           disabled={status !== 'RUNNING'}
-          className={`flex items-center space-x-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
+          className={`flex items-center space-x-1 px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
             status !== 'RUNNING'
-              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-              : 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'
+              ? 'bg-slate-900/60 text-slate-600 border border-slate-800 cursor-not-allowed'
+              : 'bg-rose-600 hover:bg-rose-500 text-white border border-rose-400/50 shadow-sm'
           }`}
-          title="Stop Simulation"
         >
-          <Square className="w-3.5 h-3.5 fill-current" />
+          <Square className="w-3 h-3 fill-current" />
           <span>Stop</span>
         </button>
 
         <button
           onClick={onReset}
-          className="flex items-center space-x-1.5 px-3 py-1 rounded text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
-          title="Reset Simulation"
+          className="flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-3 h-3" />
           <span>Reset</span>
         </button>
-      </div>
 
-      {/* Info Display (Status and Time) */}
-      <div className="flex items-center space-x-6 text-xs font-mono">
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-400 text-[11px] uppercase">State:</span>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getStatusColor(status)}`}>
+        {/* State & Timer Readout */}
+        <div className="flex items-center space-x-2 ml-1.5 border-l border-slate-800 pl-2">
+          <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase tracking-wider bg-cyan-950/60 border border-cyan-800 text-cyan-400">
             {status}
           </span>
-        </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-400 text-[11px] uppercase">Solver Time:</span>
-          <span className="text-amber-400 font-bold bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800 w-24 text-right">
-            {simulationTime.toFixed(4)} s
-          </span>
+          <div className="flex items-baseline space-x-1 bg-black/80 px-2 py-0.5 rounded border border-slate-800 text-[10px]">
+            <span className="text-slate-400 text-[9px]">t =</span>
+            <span className="text-cyan-400 font-bold">
+              {simulationTime.toFixed(4)} s
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Canvas Navigation Controls */}
-      <div className="flex items-center space-x-1 border-l border-slate-700 pl-4">
-        <button
-          onClick={onZoomIn}
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-          title="Zoom In"
-        >
-          <ZoomIn className="w-4 h-4" />
+      {/* Canvas Controls */}
+      <div className="flex items-center space-x-1 text-[9px] text-slate-400">
+        <span className="uppercase text-[8px]">VIEW</span>
+        <button onClick={onZoomOut} className="p-0.5 rounded bg-slate-900 border border-slate-800 hover:text-slate-200">
+          <ZoomOut className="w-3 h-3" />
         </button>
-        <button
-          onClick={onZoomOut}
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-          title="Zoom Out"
-        >
-          <ZoomOut className="w-4 h-4" />
+        <button onClick={onZoomIn} className="p-0.5 rounded bg-slate-900 border border-slate-800 hover:text-slate-200">
+          <ZoomIn className="w-3 h-3" />
         </button>
-        <button
-          onClick={onFitView}
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-          title="Fit View"
-        >
-          <Maximize className="w-4 h-4" />
+        <button onClick={onFitView} className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 hover:text-slate-200 font-bold text-[8px]">
+          Fit 100%
         </button>
       </div>
     </div>

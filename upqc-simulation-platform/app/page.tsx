@@ -7,16 +7,17 @@ import ModelExplorer from '@/components/ModelExplorer';
 import SimulationCanvas from '@/components/SimulationCanvas';
 import ParameterPanel from '@/components/ParameterPanel';
 import SimulationResults from '@/components/SimulationResults';
-import SimulationStatusWidget from '@/components/SimulationStatus';
+import SolarPVTelemetryCard from '@/components/SolarPVTelemetryCard';
 import { SimulationParameters, SimulationDataPoint, SimulationStatus } from '@/lib/simulation-types';
 
-// Default UPQC baseline parameters
 const DEFAULT_PARAMETERS: SimulationParameters = {
   gridVoltage: 415,
   gridFrequency: 50,
   gridRs: 0.1,
   gridLs: 0.001,
   solarIrradiance: 1000,
+  solarPanelCount: 5,
+  solarPanelWatts: 305,
   windSpeed: 12,
   batterySOC: 80,
   dcLinkVoltage: 700,
@@ -34,18 +35,15 @@ export default function WorkspacePage() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [parameters, setParameters] = useState<SimulationParameters>({ ...DEFAULT_PARAMETERS });
   const [results, setResults] = useState<SimulationDataPoint[]>([]);
-  const [resultsCollapsed, setResultsCollapsed] = useState<boolean>(true);
+  const [resultsCollapsed, setResultsCollapsed] = useState<boolean>(false);
 
-  // References to React Flow navigation methods inside SimulationCanvas
   const zoomInRef = useRef<(() => void) | null>(null);
   const zoomOutRef = useRef<(() => void) | null>(null);
   const fitViewRef = useRef<(() => void) | null>(null);
 
-  // References to simulation timing increments
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -53,21 +51,17 @@ export default function WorkspacePage() {
   }, []);
 
   const handleRunSimulation = async () => {
-    // Prevent double simulation runs
     if (status === 'RUNNING') return;
 
-    // Reset previous run data
     setStatus('RUNNING');
     setSimulationTime(0);
     setResults([]);
 
-    // Create abort controller for canceling the simulation request
     abortControllerRef.current = new AbortController();
 
-    // Start solver timer animation (increments solver clock smoothly from 0 to 0.3s over 2.5 seconds)
     const runDurationMs = 2500;
     const finalSimTime = 0.3000;
-    const incrementInterval = 50; // ms
+    const incrementInterval = 50;
     const timeStep = finalSimTime / (runDurationMs / incrementInterval);
 
     timerIntervalRef.current = setInterval(() => {
@@ -94,10 +88,8 @@ export default function WorkspacePage() {
       if (result.success) {
         setResults(result.dataPoints);
         setStatus('COMPLETED');
-        // Stop timer and set to exact final simulation time
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         setSimulationTime(0.3000);
-        // Expand the scope results drawer to highlight the results
         setResultsCollapsed(false);
       } else {
         throw new Error(result.message || 'Simulation execution failed.');
@@ -113,15 +105,8 @@ export default function WorkspacePage() {
 
   const handleStopSimulation = () => {
     if (status !== 'RUNNING') return;
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-    }
-
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     setStatus('IDLE');
   };
 
@@ -131,7 +116,7 @@ export default function WorkspacePage() {
     setSimulationTime(0);
     setParameters({ ...DEFAULT_PARAMETERS });
     setResults([]);
-    setResultsCollapsed(true);
+    setResultsCollapsed(false);
     setSelectedNodeId(null);
   };
 
@@ -148,8 +133,8 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      {/* Top Toolbar */}
+    <div className="h-screen w-screen flex flex-col bg-[#050912] text-slate-100 overflow-hidden font-mono select-none">
+      {/* Top Navigation Toolbar */}
       <SimulationToolbar
         status={status}
         simulationTime={simulationTime}
@@ -160,6 +145,15 @@ export default function WorkspacePage() {
         onZoomOut={() => zoomOutRef.current?.()}
         onFitView={() => fitViewRef.current?.()}
       />
+
+      {/* Dedicated Top Solar PV Telemetry Banner */}
+      <div className="px-2 py-1 bg-[#050912]">
+        <SolarPVTelemetryCard
+          parameters={parameters}
+          onUpdateParameters={handleApplyParameters}
+          isSimulating={status === 'RUNNING'}
+        />
+      </div>
 
       {/* Main Workspace Body */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -181,7 +175,7 @@ export default function WorkspacePage() {
           />
         </ReactFlowProvider>
 
-        {/* Right Parameters Editor */}
+        {/* Right Parameter Editor */}
         <ParameterPanel
           selectedNodeId={selectedNodeId}
           globalParameters={parameters}
@@ -190,15 +184,12 @@ export default function WorkspacePage() {
         />
       </div>
 
-      {/* Bottom Collapsible Scope Waveforms Results Drawer */}
+      {/* Bottom Collapsible Scope Oscilloscope Drawer */}
       <SimulationResults
         dataPoints={results}
         isCollapsed={resultsCollapsed}
         onToggleCollapse={() => setResultsCollapsed((c) => !c)}
       />
-
-      {/* Floating Simulation Solver Status Panel */}
-      <SimulationStatusWidget status={status} />
     </div>
   );
 }

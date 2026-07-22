@@ -54,7 +54,7 @@ export default function SimulationStatusWidget({ status }: SimulationStatusProps
   if (status === 'IDLE') return null;
 
   return (
-    <div className="fixed bottom-20 right-6 z-40 bg-slate-900/95 backdrop-blur-sm border border-slate-800 rounded shadow-2xl w-80 overflow-hidden font-mono text-xs select-none">
+    <div className="fixed bottom-12 right-[336px] z-40 bg-slate-900/95 backdrop-blur-sm border border-slate-800 rounded shadow-2xl w-80 overflow-hidden font-mono text-xs select-none">
       {/* Header */}
       <div className="h-8 bg-slate-950 px-3 flex items-center justify-between border-b border-slate-850">
         <span className="font-bold tracking-wider text-[10px] text-slate-400 uppercase flex items-center space-x-1.5">

@@ -8,5 +8,3 @@ simOut = sim(model);
 
 disp('=== Simulation completed successfully ===');
 disp(['Final simulation time: ' num2str(simOut.tout(end))]);
-
-end
