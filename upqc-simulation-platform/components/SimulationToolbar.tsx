@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Play, Square, RotateCcw, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { Play, Square, RotateCcw, ZoomIn, ZoomOut, Maximize, LineChart as ChartIcon, Activity } from 'lucide-react';
+import Link from 'next/link';
 import { SimulationStatus } from '@/lib/simulation-types';
 
 interface SimulationToolbarProps {
@@ -37,7 +38,7 @@ export default function SimulationToolbar({
             UPQC Solar Microgrid Platform
           </h1>
           <span className="text-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded font-bold">
-            5× 305W PV (1.525 kW)
+            7S×88P 415W PV (255.6 kW)
           </span>
         </div>
       </div>
@@ -77,6 +78,22 @@ export default function SimulationToolbar({
           <RotateCcw className="w-3 h-3" />
           <span>Reset</span>
         </button>
+
+        <Link
+          href="/statistics"
+          className="flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-600/50 transition-all ml-1"
+        >
+          <ChartIcon className="w-3 h-3" />
+          <span>Stats</span>
+        </Link>
+
+        <Link
+          href="/live"
+          className="flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-600/50 transition-all ml-1"
+        >
+          <Activity className="w-3 h-3" />
+          <span>Live</span>
+        </Link>
 
         {/* State & Timer Readout */}
         <div className="flex items-center space-x-2 ml-1.5 border-l border-slate-800 pl-2">

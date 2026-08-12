@@ -11,22 +11,15 @@ import SolarPVTelemetryCard from '@/components/SolarPVTelemetryCard';
 import { SimulationParameters, SimulationDataPoint, SimulationStatus } from '@/lib/simulation-types';
 
 const DEFAULT_PARAMETERS: SimulationParameters = {
-  gridVoltage: 415,
-  gridFrequency: 50,
-  gridRs: 0.1,
-  gridLs: 0.001,
+  microgridVoltage: 415,
+  microgridFrequency: 60,
   solarIrradiance: 1000,
-  solarPanelCount: 5,
-  solarPanelWatts: 305,
+  solarStringsParallel: 88,
+  solarModulesSeries: 7,
+  solarPanelWatts: 415,
   windSpeed: 12,
   batterySOC: 80,
   dcLinkVoltage: 700,
-  kpSeries: 1.5,
-  kiSeries: 120,
-  refVoltSeries: 415,
-  kpShunt: 1.0,
-  kiShunt: 85,
-  refVoltShunt: 700,
 };
 
 export default function WorkspacePage() {
@@ -133,7 +126,7 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#050912] text-slate-100 overflow-hidden font-mono select-none">
+    <div className="h-full w-full flex flex-col bg-[#050912] text-slate-100 overflow-hidden font-mono select-none">
       {/* Top Navigation Toolbar */}
       <SimulationToolbar
         status={status}

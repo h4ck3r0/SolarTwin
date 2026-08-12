@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<System>
+  <P Name="Location">[-7, -7, 1543, 831]</P>
+  <P Name="SetExecutionDomain">off</P>
+  <P Name="ExecutionDomainType">Deduce</P>
+  <P Name="SimulinkSubDomain">Simulink</P>
+  <Block BlockType="BusSelector" Name="Bus&#xA;Selector1" SID="2195">
+    <P Name="Ports">[1, 3]</P>
+    <P Name="Position">[510, 15, 515, 75]</P>
+    <P Name="ZOrder">100</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="OutputSignals">V_PV,I_PV,I_diode</P>
+    <Port>
+      <P Name="PortNumber">1</P>
+      <P Name="Name">&lt;V_PV&gt;</P>
+    </Port>
+    <Port>
+      <P Name="PortNumber">2</P>
+      <P Name="Name">&lt;I_PV&gt;</P>
+    </Port>
+    <Port>
+      <P Name="PortNumber">3</P>
+      <P Name="Name">&lt;I_diode&gt;</P>
+    </Port>
+  </Block>
+  <Block BlockType="Demux" Name="Demux" SID="1100">
+    <P Name="Ports">[1, 2]</P>
+    <P Name="Position">[450, 266, 455, 304]</P>
+    <P Name="ZOrder">-7</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="Outputs">2</P>
+    <Port>
+      <P Name="PortNumber">2</P>
+      <P Name="Name">Iq</P>
+    </Port>
+  </Block>
+  <Block BlockType="From" Name="From1" SID="2181">
+    <P Name="Position">[310, 124, 385, 146]</P>
+    <P Name="ZOrder">54</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Vdc_ref</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From11" SID="2193">
+    <P Name="Position">[310, 384, 385, 406]</P>
+    <P Name="ZOrder">58</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Vab_VSC</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From2" SID="2180">
+    <P Name="Position">[310, 159, 385, 181]</P>
+    <P Name="ZOrder">53</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Vdc_meas</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From3" SID="2210">
+    <P Name="Position">[310, 459, 385, 481]</P>
+    <P Name="ZOrder">105</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Uref1</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From4" SID="1096">
+    <P Name="Position">[310, 274, 385, 296]</P>
+    <P Name="ZOrder">-13</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">IdIq_prim</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From5" SID="1098">
+    <P Name="Position">[310, 244, 385, 266]</P>
+    <P Name="ZOrder">-14</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Id_ref</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From6" SID="2212">
+    <P Name="Position">[310, 499, 385, 521]</P>
+    <P Name="ZOrder">106</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Uref2</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From7" SID="2196">
+    <P Name="Position">[310, 34, 385, 56]</P>
+    <P Name="ZOrder">101</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">meas_PV</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From8" SID="2217">
+    <P Name="Position">[310, 584, 385, 606]</P>
+    <P Name="ZOrder">111</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">m</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="Scope" Name="IdIq (pu)&#xA;VSC Control" SID="1101">
+    <P Name="Ports">[2]</P>
+    <P Name="Position">[660, 252, 695, 308]</P>
+    <P Name="ZOrder">-28</P>
+    <P Name="BackgroundColor">green</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ScopeSpecificationString">C++SS(StrPVP(&apos;Location&apos;,&apos;[866, 223, 1315, 784]&apos;),StrPVP(&apos;ZoomMode&apos;,&apos;yonly&apos;),MxPVP(&apos;AxesTitles&apos;,54,&apos;struct(&apos;&apos;axes1&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;,&apos;&apos;axes2&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;)&apos;),MxPVP(&apos;ScopeGraphics&apos;,57,&apos;struct(&apos;&apos;FigureColor&apos;&apos;,&apos;&apos;[0.5 0.5 0.5]&apos;&apos;,&apos;&apos;AxesColor&apos;&apos;,&apos;&apos;[0 0 0]&apos;&apos;,&apos;&apos;AxesTickColor&apos;&apos;,&apos;&apos;[1 1 1]&apos;&apos;,&apos;&apos;LineColors&apos;&apos;,&apos;&apos;[1 1 0;1 0 1;0 1 1;1 0 0;0 1 0;0 0 1]&apos;&apos;,&apos;&apos;LineStyles&apos;&apos;,&apos;&apos;-|-|-|-|-|-&apos;&apos;,&apos;&apos;LineWidths&apos;&apos;,&apos;&apos;[0.5 0.5 0.5 0.5 0.5 0.5]&apos;&apos;,&apos;&apos;MarkerStyles&apos;&apos;,&apos;&apos;none|none|none|none|none|none&apos;&apos;)&apos;),StrPVP(&apos;YMin&apos;,&apos;-0.3~-0.4&apos;),StrPVP(&apos;YMax&apos;,&apos;1.5~0.35&apos;),StrPVP(&apos;LimitDataPoints&apos;,&apos;off&apos;),StrPVP(&apos;Decimation&apos;,&apos;10&apos;),StrPVP(&apos;DataFormat&apos;,&apos;Array&apos;),StrPVP(&apos;BlockParamSampleInput&apos;,&apos;off&apos;))</P>
+    <P Name="NumInputPorts">2</P>
+    <P Name="Floating">off</P>
+  </Block>
+  <Block BlockType="Scope" Name="Mod_Index" SID="2218">
+    <P Name="Ports">[1]</P>
+    <P Name="Position">[660, 567, 695, 623]</P>
+    <P Name="ZOrder">112</P>
+    <P Name="BackgroundColor">green</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ScopeSpecificationString">C++SS(StrPVP(&apos;Location&apos;,&apos;[869, 223, 1314, 781]&apos;),MxPVP(&apos;AxesTitles&apos;,54,&apos;struct(&apos;&apos;axes1&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;)&apos;),MxPVP(&apos;ScopeGraphics&apos;,57,&apos;struct(&apos;&apos;FigureColor&apos;&apos;,&apos;&apos;[0.5 0.5 0.5]&apos;&apos;,&apos;&apos;AxesColor&apos;&apos;,&apos;&apos;[0 0 0]&apos;&apos;,&apos;&apos;AxesTickColor&apos;&apos;,&apos;&apos;[1 1 1]&apos;&apos;,&apos;&apos;LineColors&apos;&apos;,&apos;&apos;[1 1 0;1 0 1;0 1 1;1 0 0;0 1 0;0 0 1]&apos;&apos;,&apos;&apos;LineStyles&apos;&apos;,&apos;&apos;-|-|-|-|-|-&apos;&apos;,&apos;&apos;LineWidths&apos;&apos;,&apos;&apos;[0.5 0.5 0.5 0.5 0.5 0.5]&apos;&apos;,&apos;&apos;MarkerStyles&apos;&apos;,&apos;&apos;none|none|none|none|none|none&apos;&apos;)&apos;),StrPVP(&apos;TimeRange&apos;,&apos;1.5&apos;),StrPVP(&apos;YMin&apos;,&apos;0.75&apos;),StrPVP(&apos;YMax&apos;,&apos;1.1&apos;),StrPVP(&apos;SaveName&apos;,&apos;Vab_VSC&apos;),StrPVP(&apos;DataFormat&apos;,&apos;StructureWithTime&apos;),StrPVP(&apos;LimitDataPoints&apos;,&apos;off&apos;),StrPVP(&apos;Decimation&apos;,&apos;1&apos;),StrPVP(&apos;BlockParamSampleInput&apos;,&apos;off&apos;))</P>
+    <P Name="NumInputPorts">1</P>
+    <P Name="Floating">off</P>
+  </Block>
+  <Block BlockType="Mux" Name="Mux" SID="1102">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[510, 246, 515, 284]</P>
+    <P Name="ZOrder">-16</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="Inputs">2</P>
+    <P Name="DisplayOption">bar</P>
+    <Port>
+      <P Name="PortNumber">1</P>
+      <P Name="Name">Id_ref   Id (magenta)</P>
+    </Port>
+  </Block>
+  <Block BlockType="Mux" Name="Mux1" SID="2183">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[510, 118, 515, 187]</P>
+    <P Name="ZOrder">56</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="Inputs">2</P>
+    <P Name="DisplayOption">bar</P>
+  </Block>
+  <Block BlockType="Mux" Name="Mux2" SID="2213">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[510, 450, 515, 530]</P>
+    <P Name="ZOrder">107</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="Inputs">2</P>
+    <P Name="DisplayOption">bar</P>
+  </Block>
+  <Block BlockType="Scope" Name="PV" SID="2197">
+    <P Name="Ports">[3]</P>
+    <P Name="Position">[660, 17, 695, 73]</P>
+    <P Name="ZOrder">102</P>
+    <P Name="BackgroundColor">green</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ScopeSpecificationString">C++SS(StrPVP(&apos;Location&apos;,&apos;[868, 223, 1291, 785]&apos;),StrPVP(&apos;ZoomMode&apos;,&apos;yonly&apos;),MxPVP(&apos;AxesTitles&apos;,54,&apos;struct(&apos;&apos;axes1&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;,&apos;&apos;axes2&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;,&apos;&apos;axes3&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;)&apos;),MxPVP(&apos;ScopeGraphics&apos;,57,&apos;struct(&apos;&apos;FigureColor&apos;&apos;,&apos;&apos;[0.5 0.5 0.5]&apos;&apos;,&apos;&apos;AxesColor&apos;&apos;,&apos;&apos;[0 0 0]&apos;&apos;,&apos;&apos;AxesTickColor&apos;&apos;,&apos;&apos;[1 1 1]&apos;&apos;,&apos;&apos;LineColors&apos;&apos;,&apos;&apos;[1 1 0;1 0 1;0 1 1;1 0 0;0 1 0;0 0 1]&apos;&apos;,&apos;&apos;LineStyles&apos;&apos;,&apos;&apos;-|-|-|-|-|-&apos;&apos;,&apos;&apos;LineWidths&apos;&apos;,&apos;&apos;[0.5 0.5 0.5 0.5 0.5 0.5]&apos;&apos;,&apos;&apos;MarkerStyles&apos;&apos;,&apos;&apos;none|none|none|none|none|none&apos;&apos;)&apos;),StrPVP(&apos;TimeRange&apos;,&apos;1.5&apos;),StrPVP(&apos;YMin&apos;,&apos;450~0~0&apos;),StrPVP(&apos;YMax&apos;,&apos;510~600~60&apos;),StrPVP(&apos;SaveName&apos;,&apos;ScopeData2&apos;),StrPVP(&apos;LimitDataPoints&apos;,&apos;off&apos;),StrPVP(&apos;Decimation&apos;,&apos;10&apos;),StrPVP(&apos;DataFormat&apos;,&apos;Array&apos;),StrPVP(&apos;BlockParamSampleInput&apos;,&apos;off&apos;))</P>
+    <P Name="NumInputPorts">3</P>
+    <P Name="Floating">off</P>
+  </Block>
+  <Block BlockType="Selector" Name="Selector" SID="2214">
+    <P Name="Ports">[1, 1]</P>
+    <P Name="Position">[445, 458, 465, 482]</P>
+    <P Name="ZOrder">108</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="InputPortWidth">3</P>
+    <P Name="IndexOptions">Index vector (dialog)</P>
+    <P Name="Indices">[1]</P>
+    <P Name="OutputSizes">1</P>
+  </Block>
+  <Block BlockType="Selector" Name="Selector1" SID="2216">
+    <P Name="Ports">[1, 1]</P>
+    <P Name="Position">[445, 498, 465, 522]</P>
+    <P Name="ZOrder">110</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="InputPortWidth">3</P>
+    <P Name="IndexOptions">Index vector (dialog)</P>
+    <P Name="Indices">[1]</P>
+    <P Name="OutputSizes">1</P>
+  </Block>
+  <Block BlockType="Scope" Name="Urefs_phaseA" SID="2211">
+    <P Name="Ports">[1]</P>
+    <P Name="Position">[660, 462, 695, 518]</P>
+    <P Name="ZOrder">104</P>
+    <P Name="BackgroundColor">green</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ScopeSpecificationString">C++SS(StrPVP(&apos;Location&apos;,&apos;[866, 224, 1317, 783]&apos;),StrPVP(&apos;ZoomMode&apos;,&apos;xonly&apos;),MxPVP(&apos;AxesTitles&apos;,54,&apos;struct(&apos;&apos;axes1&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;)&apos;),MxPVP(&apos;ScopeGraphics&apos;,57,&apos;struct(&apos;&apos;FigureColor&apos;&apos;,&apos;&apos;[0.5 0.5 0.5]&apos;&apos;,&apos;&apos;AxesColor&apos;&apos;,&apos;&apos;[0 0 0]&apos;&apos;,&apos;&apos;AxesTickColor&apos;&apos;,&apos;&apos;[1 1 1]&apos;&apos;,&apos;&apos;LineColors&apos;&apos;,&apos;&apos;[1 1 0;1 0 1;0 1 1;1 0 0;0 1 0;0 0 1]&apos;&apos;,&apos;&apos;LineStyles&apos;&apos;,&apos;&apos;-|-|-|-|-|-&apos;&apos;,&apos;&apos;LineWidths&apos;&apos;,&apos;&apos;[0.5 0.5 0.5 0.5 0.5 0.5]&apos;&apos;,&apos;&apos;MarkerStyles&apos;&apos;,&apos;&apos;none|none|none|none|none|none&apos;&apos;)&apos;),StrPVP(&apos;YMin&apos;,&apos;-1.1&apos;),StrPVP(&apos;YMax&apos;,&apos;1.2&apos;),StrPVP(&apos;SaveName&apos;,&apos;Vab_VSC3&apos;),StrPVP(&apos;DataFormat&apos;,&apos;StructureWithTime&apos;),StrPVP(&apos;LimitDataPoints&apos;,&apos;off&apos;),StrPVP(&apos;Decimation&apos;,&apos;1&apos;),StrPVP(&apos;BlockParamSampleInput&apos;,&apos;off&apos;))</P>
+    <P Name="NumInputPorts">1</P>
+    <P Name="Floating">off</P>
+  </Block>
+  <Block BlockType="Scope" Name="Vab_Inverter" SID="2194">
+    <P Name="Ports">[1]</P>
+    <P Name="Position">[660, 367, 695, 423]</P>
+    <P Name="ZOrder">57</P>
+    <P Name="BackgroundColor">green</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ScopeSpecificationString">C++SS(StrPVP(&apos;Location&apos;,&apos;[867, 224, 1316, 780]&apos;),MxPVP(&apos;AxesTitles&apos;,54,&apos;struct(&apos;&apos;axes1&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;)&apos;),MxPVP(&apos;ScopeGraphics&apos;,57,&apos;struct(&apos;&apos;FigureColor&apos;&apos;,&apos;&apos;[0.5 0.5 0.5]&apos;&apos;,&apos;&apos;AxesColor&apos;&apos;,&apos;&apos;[0 0 0]&apos;&apos;,&apos;&apos;AxesTickColor&apos;&apos;,&apos;&apos;[1 1 1]&apos;&apos;,&apos;&apos;LineColors&apos;&apos;,&apos;&apos;[1 1 0;1 0 1;0 1 1;1 0 0;0 1 0;0 0 1]&apos;&apos;,&apos;&apos;LineStyles&apos;&apos;,&apos;&apos;-|-|-|-|-|-&apos;&apos;,&apos;&apos;LineWidths&apos;&apos;,&apos;&apos;[0.5 0.5 0.5 0.5 0.5 0.5]&apos;&apos;,&apos;&apos;MarkerStyles&apos;&apos;,&apos;&apos;none|none|none|none|none|none&apos;&apos;)&apos;),StrPVP(&apos;TimeRange&apos;,&apos;0.05&apos;),StrPVP(&apos;YMin&apos;,&apos;-600&apos;),StrPVP(&apos;YMax&apos;,&apos;600&apos;),StrPVP(&apos;SaveToWorkspace&apos;,&apos;on&apos;),StrPVP(&apos;SaveName&apos;,&apos;Vab_VSC1&apos;),StrPVP(&apos;DataFormat&apos;,&apos;StructureWithTime&apos;),StrPVP(&apos;LimitDataPoints&apos;,&apos;off&apos;),StrPVP(&apos;Decimation&apos;,&apos;1&apos;),StrPVP(&apos;BlockParamSampleInput&apos;,&apos;off&apos;))</P>
+    <P Name="NumInputPorts">1</P>
+    <P Name="Floating">off</P>
+  </Block>
+  <Block BlockType="Scope" Name="Vdc_ref &#xA; Vdc_meas" SID="2182">
+    <P Name="Ports">[1]</P>
+    <P Name="Position">[660, 127, 695, 183]</P>
+    <P Name="ZOrder">55</P>
+    <P Name="BackgroundColor">green</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ScopeSpecificationString">C++SS(StrPVP(&apos;Location&apos;,&apos;[867, 223, 1313, 784]&apos;),StrPVP(&apos;ZoomMode&apos;,&apos;yonly&apos;),MxPVP(&apos;AxesTitles&apos;,54,&apos;struct(&apos;&apos;axes1&apos;&apos;,&apos;&apos;%&lt;SignalLabel&gt;&apos;&apos;)&apos;),MxPVP(&apos;ScopeGraphics&apos;,57,&apos;struct(&apos;&apos;FigureColor&apos;&apos;,&apos;&apos;[0.5 0.5 0.5]&apos;&apos;,&apos;&apos;AxesColor&apos;&apos;,&apos;&apos;[0 0 0]&apos;&apos;,&apos;&apos;AxesTickColor&apos;&apos;,&apos;&apos;[1 1 1]&apos;&apos;,&apos;&apos;LineColors&apos;&apos;,&apos;&apos;[1 1 0;1 0 1;0 1 1;1 0 0;0 1 0;0 0 1]&apos;&apos;,&apos;&apos;LineStyles&apos;&apos;,&apos;&apos;-|-|-|-|-|-&apos;&apos;,&apos;&apos;LineWidths&apos;&apos;,&apos;&apos;[0.5 0.5 0.5 0.5 0.5 0.5]&apos;&apos;,&apos;&apos;MarkerStyles&apos;&apos;,&apos;&apos;none|none|none|none|none|none&apos;&apos;)&apos;),StrPVP(&apos;TimeRange&apos;,&apos;1.5&apos;),StrPVP(&apos;YMin&apos;,&apos;450&apos;),StrPVP(&apos;YMax&apos;,&apos;500&apos;),StrPVP(&apos;SaveName&apos;,&apos;ScopeData1&apos;),StrPVP(&apos;LimitDataPoints&apos;,&apos;off&apos;),StrPVP(&apos;Decimation&apos;,&apos;10&apos;),StrPVP(&apos;DataFormat&apos;,&apos;Array&apos;),StrPVP(&apos;BlockParamSampleInput&apos;,&apos;off&apos;))</P>
+    <P Name="NumInputPorts">1</P>
+    <P Name="Floating">off</P>
+  </Block>
+  <Line>
+    <P Name="ZOrder">9</P>
+    <P Name="Src">1096#out:1</P>
+    <P Name="Dst">1100#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">10</P>
+    <P Name="Src">1098#out:1</P>
+    <P Name="Dst">1102#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">11</P>
+    <P Name="Src">1100#out:1</P>
+    <P Name="Dst">1102#in:2</P>
+  </Line>
+  <Line>
+    <P Name="Name">Id_ref   Id (magenta)</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ZOrder">57</P>
+    <P Name="Labels">[-1, 1]</P>
+    <P Name="Src">1102#out:1</P>
+    <P Name="Dst">1101#in:1</P>
+  </Line>
+  <Line>
+    <P Name="Name">Iq</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ZOrder">13</P>
+    <P Name="Labels">[-1, 1]</P>
+    <P Name="Src">1100#out:2</P>
+    <P Name="Dst">1101#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">14</P>
+    <P Name="Src">2181#out:1</P>
+    <P Name="Dst">2183#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">15</P>
+    <P Name="Src">2180#out:1</P>
+    <P Name="Dst">2183#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">24</P>
+    <P Name="Src">2183#out:1</P>
+    <P Name="Dst">2182#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">25</P>
+    <P Name="Src">2193#out:1</P>
+    <P Name="Dst">2194#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">26</P>
+    <P Name="Src">2196#out:1</P>
+    <P Name="Dst">2195#in:1</P>
+  </Line>
+  <Line>
+    <P Name="Name">&lt;I_diode&gt;</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ZOrder">38</P>
+    <P Name="Labels">[-1, 1]</P>
+    <P Name="Src">2195#out:3</P>
+    <P Name="Dst">2197#in:3</P>
+  </Line>
+  <Line>
+    <P Name="Name">&lt;V_PV&gt;</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ZOrder">39</P>
+    <P Name="Labels">[-1, 1]</P>
+    <P Name="Src">2195#out:1</P>
+    <P Name="Dst">2197#in:1</P>
+  </Line>
+  <Line>
+    <P Name="Name">&lt;I_PV&gt;</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="ZOrder">40</P>
+    <P Name="Labels">[-1, 1]</P>
+    <P Name="Src">2195#out:2</P>
+    <P Name="Dst">2197#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">42</P>
+    <P Name="Src">2210#out:1</P>
+    <P Name="Dst">2214#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">43</P>
+    <P Name="Src">2212#out:1</P>
+    <P Name="Dst">2216#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">44</P>
+    <P Name="Src">2213#out:1</P>
+    <P Name="Dst">2211#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">49</P>
+    <P Name="Src">2214#out:1</P>
+    <P Name="Dst">2213#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">50</P>
+    <P Name="Src">2216#out:1</P>
+    <P Name="Dst">2213#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">53</P>
+    <P Name="Src">2217#out:1</P>
+    <P Name="Dst">2218#in:1</P>
+  </Line>
+</System>

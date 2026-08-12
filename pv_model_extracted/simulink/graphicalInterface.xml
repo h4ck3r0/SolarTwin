@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GraphicalInterface>
+  <P Name="NumRootInports">0</P>
+  <P Name="NumRootOutports">0</P>
+  <P Name="ParameterArgumentNames"/>
+  <P Name="NumModelReferences">0</P>
+  <P Name="NumTestPointedSignals">0</P>
+  <P Name="NumProvidedFunctions">0</P>
+  <P Name="NumRequiredFunctions">0</P>
+  <P Name="NumResetEvents">0</P>
+  <P Name="HasInitializeEvent">0</P>
+  <P Name="HasTerminateEvent">0</P>
+  <P Name="PreCompExecutionDomainType">Unset</P>
+  <P Name="IsExportFunctionModel">0</P>
+  <P Name="IsArchitectureModel">0</P>
+  <P Name="IsAUTOSARArchitectureModel">0</P>
+  <P Name="NumParameterArguments">0</P>
+  <P Name="NumExternalFileReferences">38</P>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Three-Phase
+Transformer
+(Two Windings)</P>
+    <P Name="Path">$bdroot/120 kV // 25 kV 47 MVA</P>
+    <P Name="SID">1867</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Electrical
+Sources/Three-Phase Source</P>
+    <P Name="Path">$bdroot/120kV 2500MVA</P>
+    <P Name="SID">1868</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Distributed Parameters Line</P>
+    <P Name="Path">$bdroot/14-km Feeder</P>
+    <P Name="SID">1877</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Three-Phase
+Parallel RLC Load</P>
+    <P Name="Path">$bdroot/2-MW Load</P>
+    <P Name="SID">1876</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Three-Phase
+Parallel RLC Load</P>
+    <P Name="Path">$bdroot/250-kW Load</P>
+    <P Name="SID">2209</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Power
+Electronics/Three-Level Bridge</P>
+    <P Name="Path">$bdroot/3-Level IGBTs Bridge</P>
+    <P Name="SID">497</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Series RLC Branch</P>
+    <P Name="Path">$bdroot/3.3ohms </P>
+    <P Name="SID">1871</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Three-Phase
+Parallel RLC Load</P>
+    <P Name="Path">$bdroot/30-MW 2-Mvar Load</P>
+    <P Name="SID">1872</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Distributed Parameters Line</P>
+    <P Name="Path">$bdroot/8-km Feeder</P>
+    <P Name="SID">2208</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Measurements/Three-Phase
+V-I Measurement</P>
+    <P Name="Path">$bdroot/B1</P>
+    <P Name="SID">596</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Three-Phase
+Series RLC Load</P>
+    <P Name="Path">$bdroot/C</P>
+    <P Name="SID">809</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Series RLC Branch</P>
+    <P Name="Path">$bdroot/C1</P>
+    <P Name="SID">495</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Series RLC Branch</P>
+    <P Name="Path">$bdroot/C2</P>
+    <P Name="SID">1075</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Ground</P>
+    <P Name="Path">$bdroot/Ground3</P>
+    <P Name="SID">1873</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Grounding
+Transformer </P>
+    <P Name="Path">$bdroot/Grounding Transformer </P>
+    <P Name="SID">1874</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">simulink/Continuous/PID Controller</P>
+    <P Name="Path">$bdroot/Inverter Control/Current Regulator/PI</P>
+    <P Name="SID">874</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Pulse &amp; Signal
+Generators/Overmodulation</P>
+    <P Name="Path">$bdroot/Inverter Control/Overmodulation</P>
+    <P Name="SID">2201</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/PLL/PLL
+(3ph)</P>
+    <P Name="Path">$bdroot/Inverter Control/PLL &amp; Measurements/PLL (3ph)</P>
+    <P Name="SID">1409</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Transformations/abc to dq0</P>
+    <P Name="Path">$bdroot/Inverter Control/PLL &amp; Measurements/abc to dq0</P>
+    <P Name="SID">1407</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Transformations/abc to dq0</P>
+    <P Name="Path">$bdroot/Inverter Control/PLL &amp; Measurements/abc to dq1</P>
+    <P Name="SID">1408</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Pulse &amp; Signal
+Generators/PWM Generator
+(3-Level)</P>
+    <P Name="Path">$bdroot/Inverter Control/PWM Generator (3-Level)</P>
+    <P Name="SID">1411</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">simulink/Continuous/PID Controller</P>
+    <P Name="Path">$bdroot/Inverter Control/VDC Regulator/PI</P>
+    <P Name="SID">1807</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Pulse &amp; Signal
+Generators/Stair
+Generator</P>
+    <P Name="Path">$bdroot/Irradiance (W//m2)</P>
+    <P Name="SID">1852</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">re_lib/Solar/PV Array</P>
+    <P Name="Path">$bdroot/PV Array</P>
+    <P Name="SID">2763</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/Power
+(Positive-Sequence)</P>
+    <P Name="Path">$bdroot/Pac/Power (Positive-Sequence)</P>
+    <P Name="SID">1414</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/Mean</P>
+    <P Name="Path">$bdroot/Pdc/Mean</P>
+    <P Name="SID">1856</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/Mean</P>
+    <P Name="Path">$bdroot/Pdc/Mean1</P>
+    <P Name="SID">1858</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/Power
+(3ph, Instantaneous)</P>
+    <P Name="Path">$bdroot/Power (3ph, Instantaneous)</P>
+    <P Name="SID">2787</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Three-Phase
+Series RLC Branch</P>
+    <P Name="Path">$bdroot/RL</P>
+    <P Name="SID">498</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/RMS</P>
+    <P Name="Path">$bdroot/RMS</P>
+    <P Name="SID">2770</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/RMS</P>
+    <P Name="Path">$bdroot/RMS1</P>
+    <P Name="SID">2771</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/THD</P>
+    <P Name="Path">$bdroot/THD</P>
+    <P Name="SID">2785</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib_meascontrol/Measurements/THD</P>
+    <P Name="Path">$bdroot/THD1</P>
+    <P Name="SID">2786</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Measurements/Three-Phase
+V-I Measurement</P>
+    <P Name="Path">$bdroot/Three-Phase V-I Measurement</P>
+    <P Name="SID">2767</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Elements/Three-Phase
+Transformer
+(Two Windings)</P>
+    <P Name="Path">$bdroot/Tr1</P>
+    <P Name="SID">595</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Measurements/Voltage Measurement</P>
+    <P Name="Path">$bdroot/Vdc </P>
+    <P Name="SID">602</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/Measurements/Voltage Measurement</P>
+    <P Name="Path">$bdroot/Vdc 1</P>
+    <P Name="SID">1007</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <ExternalFileReference>
+    <P Name="Reference">powerlib/powergui</P>
+    <P Name="Path">$bdroot/powergui</P>
+    <P Name="SID">9</P>
+    <P Name="Type">LIBRARY_BLOCK</P>
+  </ExternalFileReference>
+  <P Name="OrderedModelArguments">1</P>
+</GraphicalInterface>

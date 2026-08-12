@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<System>
+  <P Name="Location">[76, 49, 1255, 1004]</P>
+  <P Name="SetExecutionDomain">off</P>
+  <P Name="ExecutionDomainType">Deduce</P>
+  <P Name="SimulinkSubDomain">Simulink</P>
+  <Block BlockType="Constant" Name="Iph_" SID="1884">
+    <P Name="Position">[385, 68, 485, 92]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+    <P Name="Value">Vdc_ref_Init</P>
+  </Block>
+  <Block BlockType="Constant" Name="Iph_1" SID="1885">
+    <P Name="Position">[385, 98, 485, 122]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+    <P Name="Value">Limits_MPPT(1)</P>
+  </Block>
+  <Block BlockType="Constant" Name="Iph_2" SID="1886">
+    <P Name="Position">[385, 128, 485, 152]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+    <P Name="Value">Limits_MPPT(2)</P>
+  </Block>
+  <Block BlockType="Constant" Name="Iph_3" SID="1887">
+    <P Name="Position">[385, 158, 485, 182]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+    <P Name="Value">Increment_MPPT</P>
+  </Block>
+  <Block BlockType="Mux" Name="Mux" SID="1888">
+    <P Name="Ports">[4, 1]</P>
+    <P Name="Position">[520, 61, 525, 189]</P>
+    <P Name="ZOrder">-16</P>
+    <P Name="ShowName">off</P>
+    <P Name="DisplayOption">bar</P>
+  </Block>
+  <Block BlockType="Outport" Name="Param" SID="1889">
+    <P Name="Position">[570, 118, 600, 132]</P>
+    <P Name="ZOrder">-17</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Line>
+    <P Name="ZOrder">1</P>
+    <P Name="Src">1888#out:1</P>
+    <P Name="Dst">1889#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">2</P>
+    <P Name="Src">1887#out:1</P>
+    <P Name="Dst">1888#in:4</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">3</P>
+    <P Name="Src">1886#out:1</P>
+    <P Name="Dst">1888#in:3</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">4</P>
+    <P Name="Src">1885#out:1</P>
+    <P Name="Dst">1888#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">5</P>
+    <P Name="Src">1884#out:1</P>
+    <P Name="Dst">1888#in:1</P>
+  </Line>
+  <Annotation SID="1895">
+    <P Name="Name">Parameters for Perturb and Observe Algorithm:</P>
+    <P Name="Position">[215, 16, 531, 34]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="ZOrder">-1</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">14</P>
+    <P Name="FontWeight">bold</P>
+  </Annotation>
+  <Annotation SID="1894">
+    <P Name="Name">Lower limit for Vdc_ref (Dmax)</P>
+    <P Name="Position">[172, 133, 335, 149]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="ZOrder">-2</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+  </Annotation>
+  <Annotation SID="1892">
+    <P Name="Name">Initial value for Vdc_ref output (Dinit)</P>
+    <P Name="Position">[152, 71, 347, 87]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="ZOrder">-4</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+  </Annotation>
+  <Annotation SID="1891">
+    <P Name="Name">Increment value used to increase/decrease Vdc_ref (DeltaD)</P>
+    <P Name="Position">[29, 163, 352, 179]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+  </Annotation>
+  <Annotation SID="1890">
+    <P Name="Name">Upper limit for Vdc_ref (Dmax)</P>
+    <P Name="Position">[172, 103, 335, 119]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="ZOrder">-6</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">12</P>
+  </Annotation>
+</System>

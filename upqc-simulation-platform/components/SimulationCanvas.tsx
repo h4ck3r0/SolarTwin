@@ -121,10 +121,8 @@ export default function SimulationCanvas({
           <div className="font-bold text-cyan-400 uppercase border-b border-cyan-900/50 pb-1 mb-1 tracking-wider text-[9px]">
             CANVAS HUD
           </div>
-          <div>Grid Base <span className="text-cyan-300 font-bold">415V LL</span></div>
-          <div>Frequency <span className="text-cyan-300 font-bold">50 Hz</span></div>
-          <div>Solar Array <span className="text-amber-400 font-bold">5×305W / 1.525kW</span></div>
-          <div>Mode <span className="text-emerald-400 font-bold">Active Compensation</span></div>
+          <div>Mode <span className="text-cyan-300 font-bold">OFF-GRID MICROGRID</span></div>
+          <div>Solar Array <span className="text-amber-400 font-bold">7S×88P 415W (255.6kW)</span></div>
         </Panel>
       </ReactFlow>
     </div>

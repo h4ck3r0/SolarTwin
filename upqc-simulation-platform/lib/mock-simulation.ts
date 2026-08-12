@@ -6,7 +6,7 @@ export class MockSimulationService implements SimulationService {
     await new Promise((resolve) => setTimeout(resolve, 2500));
 
     const dataPoints: SimulationDataPoint[] = [];
-    const f = params.gridFrequency || 50;
+    const f = params.microgridFrequency || 60;
     const omega = 2 * Math.PI * f;
     
     // Nominal peak voltage line-to-neutral: V_rms_L-L * sqrt(2) / sqrt(3)
@@ -14,7 +14,7 @@ export class MockSimulationService implements SimulationService {
     const nominalPeak = (nominalVLL * Math.sqrt(2)) / Math.sqrt(3);
     
     // User-defined grid voltage L-L RMS
-    const gridPeak = (params.gridVoltage * Math.sqrt(2)) / Math.sqrt(3);
+    const gridPeak = (params.microgridVoltage * Math.sqrt(2)) / Math.sqrt(3);
     const sagFactor = gridPeak / nominalPeak; // ratio of actual grid voltage to nominal
     
     // Phase shift angle for inductive load current
@@ -64,76 +64,39 @@ export class MockSimulationService implements SimulationService {
         i5 * Math.sin(5 * (omega * t + (2 * Math.PI) / 3) + Math.PI / 4) +
         i7 * Math.sin(7 * (omega * t + (2 * Math.PI) / 3) - Math.PI / 6);
 
-      // 3. Shunt APF Injecting Currents
-      // The Shunt APF injects currents to cancel the harmonics and supply active current for DC link
-      // Kp and Ki parameters adjust the settling transient of compensation
-      const settlingFactor = Math.min(1.0, t / 0.015); // transient settling in first 15ms
-      const controllerGain = Math.max(0.2, Math.min(1.5, params.kpShunt / 1.0)); // affect effectiveness
-      
-      // Compensation of 5th & 7th harmonics
-      let injectingCurrentA = -(
-        i5 * Math.sin(5 * omega * t + Math.PI / 4) +
-        i7 * Math.sin(7 * omega * t - Math.PI / 6)
-      ) * settlingFactor * controllerGain;
-      
-      let injectingCurrentB = -(
-        i5 * Math.sin(5 * (omega * t - (2 * Math.PI) / 3) + Math.PI / 4) +
-        i7 * Math.sin(7 * (omega * t - (2 * Math.PI) / 3) - Math.PI / 6)
-      ) * settlingFactor * controllerGain;
-      
-      let injectingCurrentC = -(
-        i5 * Math.sin(5 * (omega * t + (2 * Math.PI) / 3) + Math.PI / 4) +
-        i7 * Math.sin(7 * (omega * t + (2 * Math.PI) / 3) - Math.PI / 6)
-      ) * settlingFactor * controllerGain;
-      
-      // Add high frequency switching ripple (~20kHz modeled as small noise)
-      const rippleAmpCurrent = 0.35;
-      injectingCurrentA += rippleAmpCurrent * Math.sin(400 * omega * t);
-      injectingCurrentB += rippleAmpCurrent * Math.sin(400 * omega * t + Math.PI/3);
-      injectingCurrentC += rippleAmpCurrent * Math.sin(400 * omega * t - Math.PI/3);
+      // 3. Grid Currents (Load Current)
+      // Ideally grid current is pure sinusoid, but without APF, harmonics flow directly
+      const gridCurrentA = loadCurrentA;
+      const gridCurrentB = loadCurrentB;
+      const gridCurrentC = loadCurrentC;
 
-      // 4. Grid Currents (Load Current + Shunt Injecting Current)
-      // Ideally grid current is pure sinusoid
-      const gridCurrentA = loadCurrentA + injectingCurrentA;
-      const gridCurrentB = loadCurrentB + injectingCurrentB;
-      const gridCurrentC = loadCurrentC + injectingCurrentC;
+      // 4. Supply (Load) Voltages (Grid Voltage)
+      // Without UPQC, load voltage drops during microgrid sag
+      const supplyVoltageA = gridVoltageA;
+      const supplyVoltageB = gridVoltageB;
+      const supplyVoltageC = gridVoltageC;
 
-      // 5. Series APF Injecting Voltages
-      // Injects voltage in series to compensate for grid sag/swell and maintain nominal load voltage
-      const seriesSettling = inDisturbanceWindow ? Math.min(1.0, (t - 0.10) / 0.005) : 0; // 5ms response time
-      const seriesDecay = t > 0.20 ? Math.max(0, 1 - (t - 0.20) / 0.005) : 1;
-      const seriesActive = inDisturbanceWindow ? seriesSettling : seriesDecay;
+      // 7. Solar PV Array
+      const strings = params.solarStringsParallel ?? 88;
+      const modulesPerString = params.solarModulesSeries ?? 7;
+      const panelRatingWatts = params.solarPanelWatts ?? 415;
+      const totalPvCapacityWatts = strings * modulesPerString * panelRatingWatts;
       
-      const compGain = Math.max(0.5, Math.min(1.2, params.kpSeries / 1.5));
-      const targetInjectedPeak = nominalPeak * (1 - activeSagFactor) * compGain;
+      // Dynamic irradiance profile: 1000 -> 600 -> 200 -> 1000 W/m²
+      let dynamicIrradiance = 1000;
+      if (t >= 0.075 && t < 0.15) {
+        dynamicIrradiance = 600;
+      } else if (t >= 0.15 && t < 0.225) {
+        dynamicIrradiance = 200;
+      } else if (t >= 0.225) {
+        dynamicIrradiance = 1000;
+      }
       
-      let injectingVoltageA = targetInjectedPeak * Math.sin(omega * t) * seriesActive;
-      let injectingVoltageB = targetInjectedPeak * Math.sin(omega * t - (2 * Math.PI) / 3) * seriesActive;
-      let injectingVoltageC = targetInjectedPeak * Math.sin(omega * t + (2 * Math.PI) / 3) * seriesActive;
-      
-      // Add inverter switching noise
-      const rippleAmpVolt = 3.5;
-      injectingVoltageA += rippleAmpVolt * Math.sin(350 * omega * t);
-      injectingVoltageB += rippleAmpVolt * Math.sin(350 * omega * t + Math.PI/4);
-      injectingVoltageC += rippleAmpVolt * Math.sin(350 * omega * t - Math.PI/4);
-
-      // 6. Supply (Load) Voltages (Grid Voltage + Series Injecting Voltage)
-      // UPQC ensures that load voltage is stable at nominal value even during grid sag/swell
-      const supplyVoltageA = gridVoltageA + injectingVoltageA;
-      const supplyVoltageB = gridVoltageB + injectingVoltageB;
-      const supplyVoltageC = gridVoltageC + injectingVoltageC;
-
-      // 7. Solar PV Array (5 Panels x 305W = 1525W Total Capacity)
-      const panelCount = params.solarPanelCount ?? 5;
-      const panelRatingWatts = params.solarPanelWatts ?? 305;
-      const totalPvCapacityWatts = panelCount * panelRatingWatts; // 1525 W
-      
-      const irradianceFactor = Math.max(0, params.solarIrradiance / 1000);
+      const irradianceFactor = Math.max(0, dynamicIrradiance / 1000);
       const solarPowerWatts = totalPvCapacityWatts * irradianceFactor;
       
-      // 5 panels in series: Vmp per panel ~32.7V => 163.5V DC nominal string Vmp
-      // Subtle transient voltage ramp-up in first 10ms
-      const vPvNominal = panelCount * 32.7; // 163.5 V
+      // Solar string voltage
+      const vPvNominal = modulesPerString * 72.9; // 72.9 Vmp per panel
       const vPvActive = solarPowerWatts > 0 ? vPvNominal * Math.min(1.0, t / 0.01) : 0;
       const solarVoltageDc = Math.round(vPvActive * 10) / 10;
       
@@ -180,16 +143,12 @@ export class MockSimulationService implements SimulationService {
         loadCurrentA: Math.round(loadCurrentA * 100) / 100,
         loadCurrentB: Math.round(loadCurrentB * 100) / 100,
         loadCurrentC: Math.round(loadCurrentC * 100) / 100,
-        injectingVoltageA: Math.round(injectingVoltageA * 10) / 10,
-        injectingVoltageB: Math.round(injectingVoltageB * 10) / 10,
-        injectingVoltageC: Math.round(injectingVoltageC * 10) / 10,
-        injectingCurrentA: Math.round(injectingCurrentA * 100) / 100,
-        injectingCurrentB: Math.round(injectingCurrentB * 100) / 100,
-        injectingCurrentC: Math.round(injectingCurrentC * 100) / 100,
+
         dcLinkVoltage: Math.round(dcLinkVoltage * 10) / 10,
         solarPowerWatts: Math.round(solarPowerWatts * 10) / 10,
         solarVoltageDc,
         solarCurrentDc,
+        solarIrradiance: dynamicIrradiance,
       });
     }
 

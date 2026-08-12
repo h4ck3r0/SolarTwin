@@ -354,6 +354,7 @@ function generateBaselineData(): SimulationDataPoint[] {
       solarPowerWatts: 1525,
       solarVoltageDc: 163.5,
       solarCurrentDc: 9.33,
+      solarIrradiance: 1000,
     });
   }
   return pts;

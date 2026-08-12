@@ -1,26 +1,15 @@
 export interface SimulationParameters {
-  // Grid parameters
-  gridVoltage: number; // V (RMS, line-to-line)
-  gridFrequency: number; // Hz
-  gridRs: number; // Source resistance (ohms)
-  gridLs: number; // Source inductance (H)
-
   // Microgrid parameters
+  microgridVoltage: number; // V
+  microgridFrequency: number; // Hz
   solarIrradiance: number; // W/m^2
-  solarPanelCount?: number; // default: 5
-  solarPanelWatts?: number; // default: 305 W
+  solarStringsParallel?: number; // default: 88
+  solarModulesSeries?: number; // default: 7
+  solarPanelWatts?: number; // default: 415 W
   windSpeed: number; // m/s
   batterySOC: number; // %
   dcLinkVoltage: number; // V (target DC voltage)
 
-  // APF Controller parameters
-  kpSeries: number;
-  kiSeries: number;
-  refVoltSeries: number; // V (target load voltage RMS)
-  
-  kpShunt: number;
-  kiShunt: number;
-  refVoltShunt: number; // V
 }
 
 export interface SimulationDataPoint {
@@ -46,16 +35,7 @@ export interface SimulationDataPoint {
   loadCurrentB: number;
   loadCurrentC: number;
 
-  // Three-phase series injecting voltages (V)
-  injectingVoltageA: number;
-  injectingVoltageB: number;
-  injectingVoltageC: number;
 
-  // Three-phase shunt injecting currents (A)
-  injectingCurrentA: number;
-  injectingCurrentB: number;
-  injectingCurrentC: number;
-  
   // DC link voltage (V)
   dcLinkVoltage: number;
 
@@ -63,6 +43,7 @@ export interface SimulationDataPoint {
   solarPowerWatts: number;
   solarVoltageDc: number;
   solarCurrentDc: number;
+  solarIrradiance: number;
 }
 
 export interface SimulationResult {

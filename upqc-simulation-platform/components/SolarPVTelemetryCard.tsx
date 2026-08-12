@@ -17,23 +17,24 @@ export default function SolarPVTelemetryCard({
 }: SolarPVTelemetryCardProps) {
   const [copied, setCopied] = useState(false);
 
-  const count = parameters.solarPanelCount ?? 5;
-  const wattsPerPanel = parameters.solarPanelWatts ?? 305;
-  const totalCapacityWatts = count * wattsPerPanel; // 1525 W
+  const strings = parameters.solarStringsParallel ?? 88;
+  const modulesPerString = parameters.solarModulesSeries ?? 7;
+  const wattsPerPanel = parameters.solarPanelWatts ?? 415;
+  const totalCapacityWatts = strings * modulesPerString * wattsPerPanel; // ~255.6 kW
   const irradiance = parameters.solarIrradiance; // e.g. 1000 W/m²
 
   const irradianceFactor = Math.max(0, irradiance / 1000);
   const currentPowerWatts = Math.round(totalCapacityWatts * irradianceFactor * 10) / 10;
   const currentPowerKw = (currentPowerWatts / 1000).toFixed(3);
   
-  const voltageDc = currentPowerWatts > 0 ? 163.5 : 0;
+  const voltageDc = currentPowerWatts > 0 ? 510.3 : 0; // 510.3V based on 7S SunPower 415W (Vmp=72.9V)
   const currentDc = voltageDc > 0 ? Math.round((currentPowerWatts / voltageDc) * 100) / 100 : 0;
-  const perPanelPower = currentPowerWatts > 0 ? Math.round((currentPowerWatts / count) * 10) / 10 : 0;
+  const perPanelPower = currentPowerWatts > 0 ? Math.round((currentPowerWatts / (strings * modulesPerString)) * 10) / 10 : 0;
 
   const textSummary = `P: ${currentPowerWatts}W • V: ${voltageDc}Vdc • I: ${currentDc}A • Irr: ${irradiance}W/m² • IDLE 0.0000s`;
 
   const handleCopyText = () => {
-    navigator.clipboard.writeText(`5x 305W Solar Panels (1.525 kW) producing ${voltageDc}V DC at ${currentDc}A = ${currentPowerWatts}W (${currentPowerKw} kW) active power.`);
+    navigator.clipboard.writeText(`${modulesPerString}S×${strings}P ${wattsPerPanel}W Solar Array (${(totalCapacityWatts/1000).toFixed(3)} kW) producing ${voltageDc}V DC at ${currentDc}A = ${currentPowerWatts}W (${currentPowerKw} kW) active power.`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -50,9 +51,9 @@ export default function SolarPVTelemetryCard({
       {/* 1. Left: 5 Compact Solar Modules Graphic */}
       <div className="flex items-center space-x-1.5 border-r border-slate-850 pr-2.5">
         <div className="flex items-center space-x-1">
-          {[1, 2, 3, 4, 5].map((idx) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((idx) => (
             <div key={idx} className="flex flex-col items-center">
-              <div className={`w-7 h-7 rounded-[2px] border flex flex-col justify-between p-0.5 ${
+              <div className={`w-5 h-7 rounded-[2px] border flex flex-col justify-between p-0.5 ${
                 currentPowerWatts > 0 ? 'bg-amber-950/40 border-amber-500/60 shadow-sm shadow-amber-500/20' : 'bg-slate-950 border-slate-800'
               }`}>
                 <div className="grid grid-cols-2 gap-[1px] h-full">
@@ -61,8 +62,6 @@ export default function SolarPVTelemetryCard({
                   ))}
                 </div>
               </div>
-              <div className="text-[7px] font-bold text-amber-400 mt-0.5 leading-none">PV #{idx}</div>
-              <div className="text-[6.5px] text-amber-300/80 leading-none">{perPanelPower}W</div>
             </div>
           ))}
         </div>
@@ -88,7 +87,7 @@ export default function SolarPVTelemetryCard({
           <div className="text-xs font-bold text-cyan-400 leading-tight">
             {voltageDc} <span className="text-[9px] text-cyan-300">V DC</span>
           </div>
-          <div className="text-[7px] text-slate-500">5 panels series</div>
+          <div className="text-[7px] text-slate-500">{modulesPerString} panels series</div>
         </div>
 
         <div className="bg-[#070b14] border border-slate-850 px-2 py-0.5 rounded min-w-[95px]">
@@ -96,7 +95,7 @@ export default function SolarPVTelemetryCard({
           <div className="text-xs font-bold text-emerald-400 leading-tight">
             {currentDc.toFixed(2)} <span className="text-[9px] text-emerald-300">A DC</span>
           </div>
-          <div className="text-[7px] text-slate-500">Isc STC: 9.33A</div>
+          <div className="text-[7px] text-slate-500">{strings} strings parallel</div>
         </div>
       </div>
 

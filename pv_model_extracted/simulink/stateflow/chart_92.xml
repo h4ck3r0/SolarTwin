@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<chart id="92">
+  <P Name="name">Inverter Control/MPPT Controller
+using Perturbe 
+&amp; Observe technique
+ </P>
+  <P Name="windowPosition">[313 52 230 645]</P>
+  <P Name="viewLimits">[0 156.75 0 153.75]</P>
+  <P Name="screen">[1 1 1280 1024 1.333333333333333]</P>
+  <P Name="viewObj">92</P>
+  <P Name="ssIdHighWaterMark">90</P>
+  <P Name="decomposition">CLUSTER_CHART</P>
+  <P Name="type">EML_CHART</P>
+  <P Name="updateMethod">DISCRETE</P>
+  <P Name="sampleTime">Ts_Control</P>
+  <P Name="chartFileNumber">1</P>
+  <P Name="disableImplicitCasting">1</P>
+  <eml>
+    <P Name="name">PandO</P>
+  </eml>
+  <Children>
+    <state SSID="1">
+      <P Name="labelString">eML_blk_kernel()</P>
+      <P Name="position">[18 64.5 118 66]</P>
+      <P Name="fontSize">12</P>
+      <P Name="superState">SUBCHART</P>
+      <P Name="subviewer">92</P>
+      <P Name="type">FUNC_STATE</P>
+      <P Name="decomposition">CLUSTER_STATE</P>
+      <eml>
+        <P Name="isEML">1</P>
+        <P Name="script">function D  = PandO(Param, Enabled, V, I)
+
+% MPPT controller based on the Perturb &amp; Observe algorithm.
+
+% D output = Reference for DC link voltage (Vdc_ref) 
+%
+% Enabled input = 1 to enable the MPPT controller
+% V input = PV array terminal voltage (V)
+% I input = PV array current (A)
+%
+% Param input:
+Dinit = Param(1);  %Initial value for Vdc_ref
+Dmax = Param(2);   %Maximum value for Vdc_ref
+Dmin = Param(3);   %Minimum value for Vdc_ref
+deltaD = Param(4); %Increment value used to increase/decrease Vdc_ref
+%  
+
+persistent Vold Pold Dold;
+
+dataType = &apos;double&apos;;
+
+if isempty(Vold)
+    Vold=0;
+    Pold=0;
+    Dold=Dinit;
+end
+P= V*I;
+dV= V - Vold;
+dP= P - Pold;
+
+if dP ~= 0 &amp; Enabled ~=0
+    if dP &lt; 0
+        if dV &lt; 0
+            D = Dold + deltaD;
+        else
+            D = Dold - deltaD;
+        end
+    else
+        if dV &lt; 0
+            D = Dold - deltaD;
+        else
+            D = Dold + deltaD;
+        end    
+    end
+else D=Dold;
+end
+
+if D &gt;= Dmax | D&lt;= Dmin
+    D=Dold;
+end
+
+Dold=D;
+Vold=V;
+Pold=P;
+
+
+</P>
+        <P Name="editorLayout" Class="double">Matrix(4,1)
+[10.0, 5.0, 700.0, 500.0]</P>
+        <P Name="fimathString">fimath(...
+&apos;RoundMode&apos;, &apos;floor&apos;,...
+&apos;OverflowMode&apos;, &apos;wrap&apos;,...
+&apos;ProductMode&apos;, &apos;KeepLSB&apos;, &apos;ProductWordLength&apos;, 32,...
+&apos;SumMode&apos;, &apos;KeepLSB&apos;, &apos;SumWordLength&apos;, 32,...
+&apos;CastBeforeSum&apos;, true)</P>
+        <P Name="emlDefaultFimath">FimathUserSpecified</P>
+      </eml>
+    </state>
+    <data SSID="88" name="Param">
+      <P Name="scope">INPUT_DATA</P>
+      <props>
+        <array>
+          <P Name="size">-1</P>
+        </array>
+        <type>
+          <P Name="method">SF_INHERITED_TYPE</P>
+          <P Name="primitive">SF_DOUBLE_TYPE</P>
+          <P Name="isSigned">1</P>
+          <P Name="wordLength">16</P>
+        </type>
+        <P Name="complexity">SF_COMPLEX_INHERITED</P>
+        <P Name="frame">SF_FRAME_INHERITED</P>
+        <unit>
+          <P Name="name">inherit</P>
+        </unit>
+      </props>
+      <P Name="dataType">Inherit: Same as Simulink</P>
+    </data>
+    <data SSID="83" name="Enabled">
+      <P Name="scope">INPUT_DATA</P>
+      <props>
+        <array>
+          <P Name="size">-1</P>
+        </array>
+        <type>
+          <P Name="method">SF_INHERITED_TYPE</P>
+          <P Name="primitive">SF_DOUBLE_TYPE</P>
+          <P Name="isSigned">1</P>
+          <P Name="wordLength">16</P>
+        </type>
+        <P Name="complexity">SF_COMPLEX_INHERITED</P>
+        <P Name="frame">SF_FRAME_INHERITED</P>
+        <unit>
+          <P Name="name">inherit</P>
+        </unit>
+      </props>
+      <P Name="dataType">Inherit: Same as Simulink</P>
+    </data>
+    <data SSID="7" name="V">
+      <P Name="scope">INPUT_DATA</P>
+      <P Name="initFromWorkspace">1</P>
+      <P Name="isNonTunable">1</P>
+      <props>
+        <array>
+          <P Name="size">-1</P>
+        </array>
+        <type>
+          <P Name="method">SF_INHERITED_TYPE</P>
+          <P Name="primitive">SF_DOUBLE_TYPE</P>
+          <P Name="isSigned">1</P>
+          <P Name="wordLength">16</P>
+        </type>
+        <P Name="complexity">SF_COMPLEX_INHERITED</P>
+        <P Name="frame">SF_FRAME_INHERITED</P>
+        <unit>
+          <P Name="name">inherit</P>
+        </unit>
+      </props>
+      <P Name="dataType">Inherit: Same as Simulink</P>
+    </data>
+    <data SSID="12" name="I">
+      <P Name="scope">INPUT_DATA</P>
+      <props>
+        <array>
+          <P Name="size">-1</P>
+        </array>
+        <type>
+          <P Name="method">SF_INHERITED_TYPE</P>
+          <P Name="primitive">SF_DOUBLE_TYPE</P>
+          <P Name="isSigned">1</P>
+          <P Name="wordLength">16</P>
+        </type>
+        <P Name="complexity">SF_COMPLEX_INHERITED</P>
+        <P Name="frame">SF_FRAME_INHERITED</P>
+        <unit>
+          <P Name="name">inherit</P>
+        </unit>
+      </props>
+      <P Name="dataType">Inherit: Same as Simulink</P>
+    </data>
+    <data SSID="5" name="D">
+      <P Name="scope">OUTPUT_DATA</P>
+      <props>
+        <array>
+          <P Name="size">-1</P>
+        </array>
+        <type>
+          <P Name="method">SF_INHERITED_TYPE</P>
+          <P Name="primitive">SF_DOUBLE_TYPE</P>
+        </type>
+        <P Name="complexity">SF_COMPLEX_INHERITED</P>
+        <P Name="frame">SF_FRAME_NO</P>
+        <unit>
+          <P Name="name">inherit</P>
+        </unit>
+      </props>
+      <P Name="dataType">Inherit: Same as Simulink</P>
+    </data>
+    <transition SSID="2">
+      <P Name="labelString">{eML_blk_kernel();}</P>
+      <P Name="labelPosition">[32.125 19.875 102.544 14.964]</P>
+      <P Name="fontSize">12</P>
+      <src>
+        <P Name="intersection">[0 0 1 0 23.5747 14.625 0 0]</P>
+      </src>
+      <dst>
+        <P Name="SSID">3</P>
+        <P Name="intersection">[1 0 -1 0 23.5747 42.5747 0 0]</P>
+      </dst>
+      <P Name="midPoint">[23.5747 24.9468]</P>
+      <P Name="dataLimits">[21.175 25.975 14.625 42.575]</P>
+      <P Name="subviewer">92</P>
+      <P Name="drawStyle">SMART</P>
+      <slide>
+        <P Name="sticky">BOTH_STICK</P>
+      </slide>
+      <P Name="executionOrder">1</P>
+    </transition>
+    <junction SSID="3">
+      <P Name="position">[23.5747 49.5747 7]</P>
+      <P Name="subviewer">92</P>
+      <P Name="type">CONNECTIVE_JUNCTION</P>
+    </junction>
+  </Children>
+</chart>

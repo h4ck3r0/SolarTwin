@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<System>
+  <P Name="Location">[-8, -8, 1928, 1040]</P>
+  <P Name="SetExecutionDomain">off</P>
+  <P Name="ExecutionDomainType">Deduce</P>
+  <P Name="ZoomFactor">150</P>
+  <P Name="SimulinkSubDomain">Simulink</P>
+  <Block BlockType="From" Name="From2" SID="2189">
+    <P Name="Position">[20, 56, 75, 74]</P>
+    <P Name="ZOrder">99</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Vabc_B1</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="From" Name="From4" SID="2190">
+    <P Name="Position">[20, 81, 75, 99]</P>
+    <P Name="ZOrder">98</P>
+    <P Name="ShowName">off</P>
+    <P Name="CloseFcn">tagdialog Close</P>
+    <P Name="FontName">Verdana</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">Iabc_B1</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="Reference" Name="Power&#xA;(Positive-Sequence)" SID="1414">
+    <P Name="Ports">[2, 2]</P>
+    <P Name="Position">[160, 52, 215, 103]</P>
+    <P Name="ZOrder">2</P>
+    <P Name="LibraryVersion">1.185</P>
+    <P Name="FontName">Arial</P>
+    <P Name="SourceBlock">powerlib_meascontrol/Measurements/Power
+(Positive-Sequence)</P>
+    <P Name="SourceType">Power (Positive-Sequence)</P>
+    <P Name="SourceProductBaseCode">MT,PS</P>
+    <InstanceData>
+      <P Name="RTWMemSecFuncInitTerm">Inherit from model</P>
+      <P Name="RTWMemSecFuncExecute">Inherit from model</P>
+      <P Name="RTWMemSecDataConstants">Inherit from model</P>
+      <P Name="RTWMemSecDataInternal">Inherit from model</P>
+      <P Name="RTWMemSecDataParameters">Inherit from model</P>
+      <P Name="ContentPreviewEnabled">off</P>
+      <P Name="Freq">60</P>
+      <P Name="Vinit">[0, 0]</P>
+      <P Name="Iinit">[0, 0]</P>
+      <P Name="Ts">Ts_Control</P>
+    </InstanceData>
+  </Block>
+  <Block BlockType="Selector" Name="Selector" SID="1110">
+    <P Name="Ports">[1, 1]</P>
+    <P Name="Position">[165, 148, 195, 172]</P>
+    <P Name="ZOrder">-17</P>
+    <P Name="ShowName">off</P>
+    <P Name="InputPortWidth">3</P>
+    <P Name="IndexOptions">Index vector (dialog)</P>
+    <P Name="Indices">[1]</P>
+    <P Name="OutputSizes">1</P>
+  </Block>
+  <Block BlockType="Selector" Name="Selector1" SID="1111">
+    <P Name="Ports">[1, 1]</P>
+    <P Name="Position">[165, 183, 195, 207]</P>
+    <P Name="ZOrder">-17</P>
+    <P Name="ShowName">off</P>
+    <P Name="InputPortWidth">3</P>
+    <P Name="IndexOptions">Index vector (dialog)</P>
+    <P Name="Indices">[1]</P>
+    <P Name="OutputSizes">1</P>
+  </Block>
+  <Block BlockType="Gain" Name="VAr2kVAr" SID="2784">
+    <P Name="Position">[265, 90, 290, 120]</P>
+    <P Name="ZOrder">5873</P>
+    <P Name="Gain">1/1000</P>
+  </Block>
+  <Block BlockType="Gain" Name="W2kW" SID="700">
+    <P Name="Position">[285, 50, 310, 80]</P>
+    <P Name="ZOrder">-11</P>
+    <P Name="Gain">1/1000</P>
+  </Block>
+  <Block BlockType="Outport" Name="Va" SID="2176">
+    <P Name="Position">[240, 153, 270, 167]</P>
+    <P Name="ZOrder">4</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Block BlockType="Outport" Name="Ia" SID="2177">
+    <P Name="Position">[240, 188, 270, 202]</P>
+    <P Name="ZOrder">5</P>
+    <P Name="Port">2</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Block BlockType="Outport" Name="P" SID="2175">
+    <P Name="Position">[345, 58, 375, 72]</P>
+    <P Name="ZOrder">3</P>
+    <P Name="Port">3</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Line>
+    <P Name="ZOrder">1</P>
+    <P Name="Src">1414#out:2</P>
+    <P Name="Points">[10, 0; 0, 15]</P>
+    <P Name="Dst">2784#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">14</P>
+    <P Name="Src">700#out:1</P>
+    <P Name="Dst">2175#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">5</P>
+    <P Name="Src">1414#out:1</P>
+    <P Name="Dst">700#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">30</P>
+    <P Name="Src">2190#out:1</P>
+    <P Name="Points">[30, 0]</P>
+    <Branch>
+      <P Name="ZOrder">22</P>
+      <P Name="Points">[0, 105]</P>
+      <P Name="Dst">1111#in:1</P>
+    </Branch>
+    <Branch>
+      <P Name="ZOrder">19</P>
+      <P Name="Dst">1414#in:2</P>
+    </Branch>
+  </Line>
+  <Line>
+    <P Name="ZOrder">29</P>
+    <P Name="Src">2189#out:1</P>
+    <P Name="Points">[40, 0]</P>
+    <Branch>
+      <P Name="ZOrder">21</P>
+      <P Name="Points">[0, 95]</P>
+      <P Name="Dst">1110#in:1</P>
+    </Branch>
+    <Branch>
+      <P Name="ZOrder">10</P>
+      <P Name="Dst">1414#in:1</P>
+    </Branch>
+  </Line>
+  <Line>
+    <P Name="ZOrder">12</P>
+    <P Name="Src">1110#out:1</P>
+    <P Name="Dst">2176#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">13</P>
+    <P Name="Src">1111#out:1</P>
+    <P Name="Dst">2177#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">52</P>
+    <P Name="Src">2784#out:1</P>
+    <P Name="Points">[-3, 0]</P>
+  </Line>
+</System>

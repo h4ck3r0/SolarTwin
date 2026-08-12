@@ -73,15 +73,13 @@ export default function ParameterPanel({
       </div>
 
       <form onSubmit={handleApply} className="flex-1 overflow-y-auto p-3.5 space-y-4">
-        {/* Section 1: Grid Source */}
-        <div className="space-y-3">
+        {/* Section 1: AC Microgrid Bus */}
+        <div className="space-y-3 pt-2">
           <div className="border-b border-slate-850 pb-1">
-            <h3 className="text-[10px] font-bold text-cyan-400 uppercase">Grid Source</h3>
+            <h3 className="text-[10px] font-bold text-emerald-400 uppercase">AC Microgrid Bus</h3>
           </div>
-          {renderInput('Grid Voltage (V L-L RMS)', 'gridVoltage', 'V', 1, 50, 1000)}
-          {renderInput('Grid Frequency', 'gridFrequency', 'Hz', 0.5, 45, 65)}
-          {renderInput('Source Resistance', 'gridRs', 'Ω', 0.01, 0.001, 10)}
-          {renderInput('Source Inductance', 'gridLs', 'H', 0.0001, 0.0001, 0.5)}
+          {renderInput('Line Voltage', 'microgridVoltage', 'V', 5, 100, 1000)}
+          {renderInput('Frequency', 'microgridFrequency', 'Hz', 1, 40, 60)}
         </div>
 
         {/* Section 2: Microgrid & Solar */}
@@ -89,7 +87,8 @@ export default function ParameterPanel({
           <div className="border-b border-slate-850 pb-1">
             <h3 className="text-[10px] font-bold text-amber-400 uppercase">Microgrid & Solar</h3>
           </div>
-          {renderInput('Solar Panel Count', 'solarPanelCount', 'units', 1, 1, 100)}
+          {renderInput('Parallel Strings', 'solarStringsParallel', 'units', 1, 1, 500)}
+          {renderInput('Series Modules', 'solarModulesSeries', 'units', 1, 1, 50)}
           {renderInput('Panel Rating', 'solarPanelWatts', 'W', 5, 50, 1000)}
           {renderInput('Solar Irradiance', 'solarIrradiance', 'W/m²', 50, 0, 1500)}
           {renderInput('Wind Speed', 'windSpeed', 'm/s', 0.5, 0, 30)}

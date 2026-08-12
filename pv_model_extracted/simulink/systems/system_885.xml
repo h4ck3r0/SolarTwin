@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<System>
+  <P Name="Location">[79, 49, 1258, 1004]</P>
+  <P Name="SetExecutionDomain">off</P>
+  <P Name="ExecutionDomainType">Deduce</P>
+  <P Name="SimulinkSubDomain">Simulink</P>
+  <Block BlockType="Inport" Name="Vabc_prim" SID="886">
+    <P Name="Position">[75, 178, 105, 192]</P>
+    <P Name="ZOrder">-1</P>
+  </Block>
+  <Block BlockType="Inport" Name="Iabc_prim" SID="887">
+    <P Name="Position">[70, 293, 100, 307]</P>
+    <P Name="ZOrder">-2</P>
+    <P Name="Port">2</P>
+  </Block>
+  <Block BlockType="Goto" Name="Goto3" SID="890">
+    <P Name="Position">[565, 261, 620, 279]</P>
+    <P Name="ZOrder">-3</P>
+    <P Name="ShowName">off</P>
+    <P Name="GotoTag">IdIq_prim</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="Reference" Name="PLL&#xA;(3ph)" SID="1409">
+    <P Name="Ports">[1, 2]</P>
+    <P Name="Position">[245, 107, 295, 138]</P>
+    <P Name="ZOrder">6</P>
+    <P Name="LibraryVersion">1.185</P>
+    <P Name="FontName">Arial</P>
+    <P Name="SourceBlock">powerlib_meascontrol/PLL/PLL
+(3ph)</P>
+    <P Name="SourceType">PLL (3ph)</P>
+    <P Name="SourceProductBaseCode">MT,PS</P>
+    <InstanceData>
+      <P Name="RTWMemSecFuncInitTerm">Inherit from model</P>
+      <P Name="RTWMemSecFuncExecute">Inherit from model</P>
+      <P Name="RTWMemSecDataConstants">Inherit from model</P>
+      <P Name="RTWMemSecDataInternal">Inherit from model</P>
+      <P Name="RTWMemSecDataParameters">Inherit from model</P>
+      <P Name="ContentPreviewEnabled">off</P>
+      <P Name="Fmin">45</P>
+      <P Name="Par_Init">[-0.57  Fnom]</P>
+      <P Name="ParK">[180, 3200, 1]</P>
+      <P Name="TcD">1e-4</P>
+      <P Name="MaxRateChangeFreq">12</P>
+      <P Name="FilterCutOffFreq">25</P>
+      <P Name="Ts">Ts_Control</P>
+      <P Name="AGC">on</P>
+    </InstanceData>
+  </Block>
+  <Block BlockType="Selector" Name="Selector1" SID="892">
+    <P Name="Ports">[1, 1]</P>
+    <P Name="Position">[490, 297, 515, 323]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="ShowName">off</P>
+    <P Name="InputPortWidth">3</P>
+    <P Name="IndexOptions">Index vector (dialog)</P>
+    <P Name="Indices">[1 2]</P>
+    <P Name="OutputSizes">1</P>
+  </Block>
+  <Block BlockType="Selector" Name="Selector2" SID="893">
+    <P Name="Ports">[1, 1]</P>
+    <P Name="Position">[490, 182, 515, 208]</P>
+    <P Name="ZOrder">-6</P>
+    <P Name="ShowName">off</P>
+    <P Name="InputPortWidth">3</P>
+    <P Name="IndexOptions">Index vector (dialog)</P>
+    <P Name="Indices">[1 2]</P>
+    <P Name="OutputSizes">1</P>
+  </Block>
+  <Block BlockType="Terminator" Name="Terminator" SID="1094">
+    <P Name="Position">[325, 107, 340, 123]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="ShowName">off</P>
+  </Block>
+  <Block BlockType="Gain" Name="V-&gt;pu" SID="894">
+    <P Name="Position">[155, 165, 200, 205]</P>
+    <P Name="ZOrder">-8</P>
+    <P Name="Gain">1/(Vnom_prim*sqrt(2)/sqrt(3))</P>
+    <P Name="ParamDataTypeStr">Inherit: Same as input</P>
+    <P Name="OutDataTypeStr">Inherit: Same as input</P>
+    <P Name="SaturateOnIntegerOverflow">on</P>
+  </Block>
+  <Block BlockType="Gain" Name="V-&gt;pu1" SID="895">
+    <P Name="Position">[150, 276, 205, 324]</P>
+    <P Name="ZOrder">-9</P>
+    <P Name="Gain">Vnom_prim*sqrt(3)/Pnom/sqrt(2)</P>
+    <P Name="ParamDataTypeStr">Inherit: Same as input</P>
+    <P Name="OutDataTypeStr">Inherit: Same as input</P>
+    <P Name="SaturateOnIntegerOverflow">on</P>
+  </Block>
+  <Block BlockType="Reference" Name="abc to dq0" SID="1407">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[405, 175, 455, 210]</P>
+    <P Name="ZOrder">4</P>
+    <P Name="LibraryVersion">1.185</P>
+    <P Name="FontName">Arial</P>
+    <P Name="SourceBlock">powerlib_meascontrol/Transformations/abc to dq0</P>
+    <P Name="SourceType">abc to dq0 Transformation</P>
+    <P Name="SourceProductBaseCode">MT,PS</P>
+    <InstanceData>
+      <P Name="RTWMemSecFuncInitTerm">Inherit from model</P>
+      <P Name="RTWMemSecFuncExecute">Inherit from model</P>
+      <P Name="RTWMemSecDataConstants">Inherit from model</P>
+      <P Name="RTWMemSecDataInternal">Inherit from model</P>
+      <P Name="RTWMemSecDataParameters">Inherit from model</P>
+      <P Name="ContentPreviewEnabled">off</P>
+      <P Name="Alignment">90 degrees behind phase A axis</P>
+    </InstanceData>
+  </Block>
+  <Block BlockType="Reference" Name="abc to dq1" SID="1408">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[395, 290, 445, 325]</P>
+    <P Name="ZOrder">5</P>
+    <P Name="LibraryVersion">1.185</P>
+    <P Name="FontName">Arial</P>
+    <P Name="SourceBlock">powerlib_meascontrol/Transformations/abc to dq0</P>
+    <P Name="SourceType">abc to dq0 Transformation</P>
+    <P Name="SourceProductBaseCode">MT,PS</P>
+    <InstanceData>
+      <P Name="RTWMemSecFuncInitTerm">Inherit from model</P>
+      <P Name="RTWMemSecFuncExecute">Inherit from model</P>
+      <P Name="RTWMemSecDataConstants">Inherit from model</P>
+      <P Name="RTWMemSecDataInternal">Inherit from model</P>
+      <P Name="RTWMemSecDataParameters">Inherit from model</P>
+      <P Name="ContentPreviewEnabled">off</P>
+      <P Name="Alignment">90 degrees behind phase A axis</P>
+    </InstanceData>
+  </Block>
+  <Block BlockType="Outport" Name="wt" SID="898">
+    <P Name="Position">[390, 123, 420, 137]</P>
+    <P Name="ZOrder">-12</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Block BlockType="Outport" Name="VdVq_prim" SID="899">
+    <P Name="Position">[555, 188, 585, 202]</P>
+    <P Name="ZOrder">-13</P>
+    <P Name="Port">2</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Block BlockType="Outport" Name="IdIq_prim" SID="900">
+    <P Name="Position">[570, 303, 600, 317]</P>
+    <P Name="ZOrder">-14</P>
+    <P Name="Port">3</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Line>
+    <P Name="ZOrder">1</P>
+    <P Name="Src">895#out:1</P>
+    <P Name="Dst">1408#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">2</P>
+    <P Name="Src">894#out:1</P>
+    <P Name="Points">[20, 0]</P>
+    <Branch>
+      <P Name="ZOrder">3</P>
+      <P Name="Points">[0, -60]</P>
+      <P Name="Dst">1409#in:1</P>
+    </Branch>
+    <Branch>
+      <P Name="ZOrder">4</P>
+      <P Name="Dst">1407#in:1</P>
+    </Branch>
+  </Line>
+  <Line>
+    <P Name="ZOrder">5</P>
+    <P Name="Src">1408#out:1</P>
+    <P Name="Dst">892#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">6</P>
+    <P Name="Src">886#out:1</P>
+    <P Name="Dst">894#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">7</P>
+    <P Name="Src">887#out:1</P>
+    <P Name="Dst">895#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">8</P>
+    <P Name="Src">1407#out:1</P>
+    <P Name="Dst">893#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">9</P>
+    <P Name="Src">893#out:1</P>
+    <P Name="Dst">899#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">10</P>
+    <P Name="Src">892#out:1</P>
+    <P Name="Points">[20, 0]</P>
+    <Branch>
+      <P Name="ZOrder">11</P>
+      <P Name="Points">[0, -40]</P>
+      <P Name="Dst">890#in:1</P>
+    </Branch>
+    <Branch>
+      <P Name="ZOrder">12</P>
+      <P Name="Dst">900#in:1</P>
+    </Branch>
+  </Line>
+  <Line>
+    <P Name="ZOrder">13</P>
+    <P Name="Src">1409#out:2</P>
+    <P Name="Points">[30, 0]</P>
+    <Branch>
+      <P Name="ZOrder">14</P>
+      <P Name="Dst">898#in:1</P>
+    </Branch>
+    <Branch>
+      <P Name="ZOrder">15</P>
+      <P Name="Points">[0, 70; 1, 0]</P>
+      <Branch>
+        <P Name="ZOrder">16</P>
+        <P Name="Points">[0, 115]</P>
+        <P Name="Dst">1408#in:2</P>
+      </Branch>
+      <Branch>
+        <P Name="ZOrder">17</P>
+        <P Name="Dst">1407#in:2</P>
+      </Branch>
+    </Branch>
+  </Line>
+  <Line>
+    <P Name="ZOrder">18</P>
+    <P Name="Src">1409#out:1</P>
+    <P Name="Dst">1094#in:1</P>
+  </Line>
+  <Annotation SID="2761">
+    <P Name="Name">PLL &amp; Measurements
+===================</P>
+    <P Name="Position">[209, 35, 366, 69]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="HorizontalAlignment">left</P>
+    <P Name="VerticalAlignment">top</P>
+    <P Name="ZOrder">-3</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">14</P>
+    <P Name="FontWeight">bold</P>
+  </Annotation>
+</System>

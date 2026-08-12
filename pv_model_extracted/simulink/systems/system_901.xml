@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<System>
+  <P Name="Location">[79, 49, 1258, 1004]</P>
+  <P Name="SetExecutionDomain">off</P>
+  <P Name="ExecutionDomainType">Deduce</P>
+  <P Name="SimulinkSubDomain">Simulink</P>
+  <Block BlockType="Inport" Name="wt" SID="902">
+    <P Name="Position">[550, 223, 580, 237]</P>
+    <P Name="ZOrder">-1</P>
+  </Block>
+  <Block BlockType="Inport" Name="VdVq_conv" SID="903">
+    <P Name="Position">[285, 128, 315, 142]</P>
+    <P Name="ZOrder">-2</P>
+    <P Name="Port">2</P>
+  </Block>
+  <Block BlockType="Sum" Name="Add1" SID="904">
+    <P Name="Ports">[4, 1]</P>
+    <P Name="Position">[690, 215, 715, 350]</P>
+    <P Name="ZOrder">-3</P>
+    <P Name="ShowName">off</P>
+    <P Name="IconShape">rectangular</P>
+    <P Name="Inputs">++++</P>
+  </Block>
+  <Block BlockType="Sum" Name="Add2" SID="905">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[760, 155, 780, 210]</P>
+    <P Name="ZOrder">-4</P>
+    <P Name="ShowName">off</P>
+    <P Name="IconShape">rectangular</P>
+  </Block>
+  <Block BlockType="ComplexToMagnitudeAngle" Name="Complex to&#xA;Magnitude-Angle" SID="906">
+    <P Name="Ports">[1, 2]</P>
+    <P Name="Position">[510, 141, 540, 179]</P>
+    <P Name="ZOrder">-5</P>
+    <P Name="ShowName">off</P>
+  </Block>
+  <Block BlockType="Constant" Name="Constant" SID="907">
+    <P Name="Position">[515, 287, 560, 313]</P>
+    <P Name="ZOrder">-6</P>
+    <P Name="ShowName">off</P>
+    <P Name="Value">-pi/6</P>
+  </Block>
+  <Block BlockType="Constant" Name="Constant1" SID="908">
+    <P Name="Position">[35, 147, 115, 173]</P>
+    <P Name="ZOrder">-7</P>
+    <P Name="ShowName">off</P>
+    <P Name="Value">Vnom_dc</P>
+  </Block>
+  <Block BlockType="Constant" Name="Constant2" SID="909">
+    <P Name="Position">[475, 254, 580, 276]</P>
+    <P Name="ZOrder">-8</P>
+    <P Name="ShowName">off</P>
+    <P Name="Value">[ 0  -2*pi/3  2*pi/3  ]</P>
+  </Block>
+  <Block BlockType="Constant" Name="Constant3" SID="910">
+    <P Name="Position">[20, 188, 155, 212]</P>
+    <P Name="ZOrder">-9</P>
+    <P Name="ShowName">off</P>
+    <P Name="Value">Vnom_sec*sqrt(2)/sqrt(3)</P>
+  </Block>
+  <Block BlockType="Constant" Name="Constant4" SID="911">
+    <P Name="Position">[485, 351, 595, 379]</P>
+    <P Name="ZOrder">-10</P>
+    <P Name="ShowName">off</P>
+    <P Name="Value">Ts_Control*Fnom*(2*pi)</P>
+  </Block>
+  <Block BlockType="Demux" Name="Demux1" SID="912">
+    <P Name="Ports">[1, 2]</P>
+    <P Name="Position">[410, 143, 415, 172]</P>
+    <P Name="ZOrder">-11</P>
+    <P Name="ShowName">off</P>
+    <P Name="Outputs">2</P>
+  </Block>
+  <Block BlockType="Gain" Name="Gain1" SID="913">
+    <P Name="Position">[155, 144, 195, 176]</P>
+    <P Name="ZOrder">-12</P>
+    <P Name="ShowName">off</P>
+    <P Name="Gain">1/2</P>
+  </Block>
+  <Block BlockType="Goto" Name="Goto1" SID="914">
+    <P Name="Position">[760, 102, 795, 118]</P>
+    <P Name="ZOrder">-13</P>
+    <P Name="ShowName">off</P>
+    <P Name="FontSize">11</P>
+    <P Name="GotoTag">m</P>
+    <P Name="TagVisibility">global</P>
+  </Block>
+  <Block BlockType="Product" Name="Product" SID="916">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[220, 141, 250, 219]</P>
+    <P Name="ZOrder">-14</P>
+    <P Name="ShowName">off</P>
+    <P Name="Inputs">*/</P>
+    <P Name="RndMeth">Zero</P>
+  </Block>
+  <Block BlockType="Product" Name="Product1" SID="917">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[355, 113, 385, 202]</P>
+    <P Name="ZOrder">-15</P>
+    <P Name="ShowName">off</P>
+    <P Name="Inputs">*/</P>
+    <P Name="RndMeth">Zero</P>
+  </Block>
+  <Block BlockType="Product" Name="Product2" SID="918">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[880, 101, 910, 214]</P>
+    <P Name="ZOrder">-16</P>
+    <P Name="ShowName">off</P>
+    <P Name="Inputs">**</P>
+    <P Name="RndMeth">Zero</P>
+  </Block>
+  <Block BlockType="RealImagToComplex" Name="Real-Imag to&#xA;Complex" SID="919">
+    <P Name="Ports">[2, 1]</P>
+    <P Name="Position">[455, 140, 485, 175]</P>
+    <P Name="ZOrder">-17</P>
+    <P Name="ShowName">off</P>
+  </Block>
+  <Block BlockType="Trigonometry" Name="Trigonometric&#xA;Function" SID="921">
+    <P Name="Ports">[1, 1]</P>
+    <P Name="Position">[810, 170, 840, 200]</P>
+    <P Name="ZOrder">-19</P>
+    <P Name="ShowName">off</P>
+  </Block>
+  <Block BlockType="Outport" Name="Uabc_ref" SID="922">
+    <P Name="Position">[960, 153, 990, 167]</P>
+    <P Name="ZOrder">-20</P>
+    <P Name="VectorParamsAs1DForOutWhenUnconnected">off</P>
+  </Block>
+  <Line>
+    <P Name="ZOrder">2</P>
+    <P Name="Src">908#out:1</P>
+    <P Name="Dst">913#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">3</P>
+    <P Name="Src">903#out:1</P>
+    <P Name="Dst">917#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">4</P>
+    <P Name="Src">917#out:1</P>
+    <P Name="Dst">912#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">5</P>
+    <P Name="Src">913#out:1</P>
+    <P Name="Dst">916#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">6</P>
+    <P Name="Src">919#out:1</P>
+    <P Name="Dst">906#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">7</P>
+    <P Name="Src">912#out:1</P>
+    <P Name="Dst">919#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">8</P>
+    <P Name="Src">912#out:2</P>
+    <P Name="Dst">919#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">9</P>
+    <P Name="Src">909#out:1</P>
+    <P Name="Dst">904#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">10</P>
+    <P Name="Src">907#out:1</P>
+    <P Name="Dst">904#in:3</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">11</P>
+    <P Name="Src">910#out:1</P>
+    <P Name="Dst">916#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">12</P>
+    <P Name="Src">916#out:1</P>
+    <P Name="Dst">917#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">13</P>
+    <P Name="Src">906#out:2</P>
+    <P Name="Dst">905#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">14</P>
+    <P Name="Src">904#out:1</P>
+    <P Name="Points">[20, 0; 0, -90]</P>
+    <P Name="Dst">905#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">15</P>
+    <P Name="Src">905#out:1</P>
+    <P Name="Dst">921#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">23</P>
+    <P Name="Src">906#out:1</P>
+    <P Name="Points">[185, 0; 0, -20]</P>
+    <Branch>
+      <P Name="ZOrder">30</P>
+      <P Name="Points">[0, -20]</P>
+      <P Name="Dst">914#in:1</P>
+    </Branch>
+    <Branch>
+      <P Name="ZOrder">18</P>
+      <P Name="Dst">918#in:1</P>
+    </Branch>
+  </Line>
+  <Line>
+    <P Name="ZOrder">19</P>
+    <P Name="Src">921#out:1</P>
+    <P Name="Dst">918#in:2</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">20</P>
+    <P Name="Src">918#out:1</P>
+    <P Name="Dst">922#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">21</P>
+    <P Name="Src">902#out:1</P>
+    <P Name="Dst">904#in:1</P>
+  </Line>
+  <Line>
+    <P Name="ZOrder">22</P>
+    <P Name="Src">911#out:1</P>
+    <P Name="Points">[35, 0; 0, -30]</P>
+    <P Name="Dst">904#in:4</P>
+  </Line>
+  <Annotation SID="1387">
+    <P Name="Name">(Correction for transformer
+ D1 connection)</P>
+    <P Name="Position">[465, 314, 585, 340]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="ZOrder">-1</P>
+  </Annotation>
+  <Annotation SID="1388">
+    <P Name="Name">(Correction for delai of Ts_Control)</P>
+    <P Name="Position">[445, 386, 599, 400]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="ZOrder">-2</P>
+  </Annotation>
+  <Annotation SID="2760">
+    <P Name="Name">Uref Generation
+==============</P>
+    <P Name="Position">[468, 43, 584, 77]</P>
+    <P Name="InternalMargins">[0, 0, 0, 0]</P>
+    <P Name="HorizontalAlignment">left</P>
+    <P Name="VerticalAlignment">top</P>
+    <P Name="ZOrder">-2</P>
+    <P Name="FontName">Arial</P>
+    <P Name="FontSize">14</P>
+    <P Name="FontWeight">bold</P>
+  </Annotation>
+</System>
