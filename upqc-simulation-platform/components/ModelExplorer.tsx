@@ -24,6 +24,11 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
     shunt: true,
   });
 
+  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
+    event.dataTransfer.setData('application/reactflow', JSON.stringify({ type: nodeType, label }));
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
   const toggleExpand = (key: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -81,10 +86,10 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
     const isSelected = item.nodeId ? selectedNodeId === item.nodeId : false;
 
     const getIcon = (id: string, isLeaf: boolean) => {
-      if (id === 'grid' || id.includes('vsrc')) return <Radio className="w-3.5 h-3.5 text-cyan-400" />;
-      if (id.includes('series')) return <Zap className="w-3.5 h-3.5 text-amber-400" />;
-      if (id.includes('microgrid') || id.includes('solar')) return <Sun className="w-3.5 h-3.5 text-amber-400" />;
-      if (id.includes('ctrl')) return <Cpu className="w-3.5 h-3.5 text-cyan-400" />;
+      if (id === 'grid' || id.includes('vsrc')) return <Radio className="w-3.5 h-3.5 text-sky-600" />;
+      if (id.includes('series')) return <Zap className="w-3.5 h-3.5 text-amber-600" />;
+      if (id.includes('microgrid') || id.includes('solar')) return <Sun className="w-3.5 h-3.5 text-amber-600" />;
+      if (id.includes('ctrl')) return <Cpu className="w-3.5 h-3.5 text-sky-600" />;
       return <Layout className="w-3.5 h-3.5 text-slate-500" />;
     };
 
@@ -92,17 +97,19 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
       <div key={item.id} className="select-none">
         <div
           onClick={() => item.nodeId && onSelectItem(item.nodeId)}
-          className={`flex items-center py-1.5 px-2 hover:bg-[#101726] cursor-pointer text-xs font-mono transition-colors ${
-            isSelected ? 'bg-cyan-950/80 border-r-2 border-cyan-400 text-cyan-200 font-bold' : 'text-slate-300'
-          }`}
+          onDragStart={(event) => item.nodeId ? onDragStart(event, item.nodeId === 'microgrid' ? 'microgrid' : 'electrical', item.name) : undefined}
+          draggable={!!item.nodeId}
+          className={`flex items-center py-1.5 px-2 hover:bg-slate-50 cursor-pointer text-xs font-mono transition-colors ${
+            isSelected ? 'bg-sky-50 border-r-2 border-sky-400 text-sky-700 font-bold' : 'text-slate-700'
+          } ${item.nodeId ? 'cursor-grab active:cursor-grabbing' : ''}`}
           style={{ paddingLeft: `${depth * 14 + 8}px` }}
         >
           {hasChildren ? (
             <button
               onClick={(e) => toggleExpand(item.id, e)}
-              className="mr-1 p-0.5 rounded text-slate-400 hover:text-slate-200"
+              className="mr-1 p-0.5 rounded text-slate-500 hover:text-slate-800"
             >
-              {isExpanded ? <ChevronDown className="w-3 h-3 text-cyan-400" /> : <ChevronRight className="w-3 h-3 text-slate-500" />}
+              {isExpanded ? <ChevronDown className="w-3 h-3 text-sky-600" /> : <ChevronRight className="w-3 h-3 text-slate-500" />}
             </button>
           ) : (
             <span className="w-4 mr-1"></span>
@@ -113,7 +120,7 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
         </div>
 
         {hasChildren && isExpanded && (
-          <div className="border-l border-slate-850 ml-3.5">
+          <div className="border-l border-slate-200 ml-3.5">
             {item.children!.map((child) => renderTree(child, depth + 1))}
           </div>
         )}
@@ -122,11 +129,11 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
   };
 
   return (
-    <div className="w-44 bg-[#060b13] border-r border-slate-850 flex flex-col h-full overflow-hidden text-slate-300 select-none font-mono text-[10px]">
+    <div className="w-52 min-w-[150px] max-w-[400px] bg-white border-r border-slate-200 flex flex-col h-full overflow-hidden text-slate-700 select-none font-mono text-[10px] resize-x relative z-10">
       {/* Header */}
-      <div className="px-3 py-2 bg-[#090f1a] text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-850 flex items-center justify-between">
+      <div className="px-3 py-2 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 flex items-center justify-between">
         <span>Model Explorer</span>
-        <span className="text-[9px] text-cyan-400 font-mono">1.0_UPQC</span>
+        <span className="text-[9px] text-sky-600 font-mono">1.0_UPQC</span>
       </div>
 
       {/* Tree list */}
@@ -135,13 +142,13 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
       </div>
 
       {/* Diagnostics */}
-      <div className="p-3 bg-[#090f1a] border-t border-slate-850 text-[10px] space-y-1.5">
-        <div className="text-slate-400 font-bold uppercase tracking-wide border-b border-slate-800 pb-1 text-[9px]">
+      <div className="p-3 bg-slate-50 border-t border-slate-200 text-[10px] space-y-1.5">
+        <div className="text-slate-500 font-bold uppercase tracking-wide border-b border-slate-200 pb-1 text-[9px]">
           Quick Diagnostics
         </div>
         <div className="flex justify-between">
           <span className="text-slate-500">Block ID:</span>
-          <span className="text-cyan-400 font-bold truncate max-w-[120px]">
+          <span className="text-sky-600 font-bold truncate max-w-[120px]">
             {selectedNodeId || 'grid-source'}
           </span>
         </div>

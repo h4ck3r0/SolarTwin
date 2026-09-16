@@ -116,20 +116,20 @@ export const initialEdges: Edge[] = [
     source: 'ac-microgrid',
     target: 'critical-load',
     animated: true,
-    style: { stroke: '#00f0ff', strokeWidth: 2 },
+    style: { stroke: '#0284c7', strokeWidth: 2 },
   },
   {
     id: 'e-ac-diode',
     source: 'ac-microgrid',
     target: 'diode-rectifier',
     animated: true,
-    style: { stroke: '#f43f5e', strokeWidth: 2 },
+    style: { stroke: '#e11d48', strokeWidth: 2 },
   },
   {
     id: 'e-ac-scope',
     source: 'ac-microgrid',
     target: 'scope-block',
     animated: true,
-    style: { stroke: '#00f0ff', strokeWidth: 1.5, strokeDasharray: '3' },
+    style: { stroke: '#0284c7', strokeWidth: 1.5, strokeDasharray: '3' },
   },
 ];

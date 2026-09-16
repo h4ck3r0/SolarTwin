@@ -9,246 +9,212 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   AreaChart,
   Area,
 } from 'recharts';
 import { SimulationDataPoint } from '@/lib/simulation-types';
 import Link from 'next/link';
-import { ArrowLeft, Play, Sun, Zap, Activity, Cpu, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Activity, Download, ChevronRight } from 'lucide-react';
 
 export default function StatisticsPage() {
   const [data, setData] = useState<SimulationDataPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleRunAnalysis = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/simulation/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          microgridVoltage: 415,
-          microgridFrequency: 60,
-          solarIrradiance: 1000,
-          solarStringsParallel: 88,
-          solarModulesSeries: 7,
-          solarPanelWatts: 415,
-          windSpeed: 12,
-          batterySOC: 80,
-          dcLinkVoltage: 700,
-          kpSeries: 1.5,
-          kiSeries: 120,
-          refVoltSeries: 415,
-          kpShunt: 1.0,
-          kiShunt: 85,
-          refVoltShunt: 700,
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setData(result.dataPoints);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Automatically trigger run on initial page load for convenience
-    handleRunAnalysis();
+    // Load simulation results from localStorage
+    const stored = localStorage.getItem('simulation_results');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setData(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse simulation results", e);
+      }
+    }
+    setIsLoading(false);
   }, []);
 
+  const handleExportCSV = () => {
+    if (data.length === 0) return;
+    const headers = Object.keys(data[0]);
+    const rows = data.map((dp) => headers.map((k) => (dp as any)[k]));
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', 'simulation_full_telemetry.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-pulse text-sky-600 font-mono">Loading telemetry...</div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center font-mono">
+        <Activity className="w-12 h-12 text-slate-300 mb-4" />
+        <h2 className="text-xl font-bold text-slate-700">No Simulation Data Found</h2>
+        <p className="text-slate-500 mb-6">Please run a simulation in the Workspace first.</p>
+        <Link href="/" className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded font-bold transition-colors">
+          Go to Workspace
+        </Link>
+      </div>
+    );
+  }
+
+  const renderSinglePhaseChart = (title: string, dataKey: string, color: string, unit: string) => (
+    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm flex flex-col h-64">
+      <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">{title}</div>
+      <div className="flex-1 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={color} stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} />
+            <XAxis dataKey="time" tickFormatter={(t) => `${(t * 1000).toFixed(0)}`} stroke="#94a3b8" style={{ fontSize: 9, fontFamily: 'monospace' }} />
+            <YAxis stroke="#94a3b8" style={{ fontSize: 9, fontFamily: 'monospace' }} domain={['auto', 'auto']} unit={` ${unit}`} />
+            <Tooltip
+              contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '6px' }}
+              labelStyle={{ fontSize: 10, color: '#0ea5e9', fontFamily: 'monospace', fontWeight: 'bold' }}
+              itemStyle={{ fontSize: 10, fontFamily: 'monospace' }}
+              labelFormatter={(lbl) => `Time: ${(lbl * 1000).toFixed(2)} ms`}
+            />
+            <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fillOpacity={1} fill={`url(#grad-${dataKey})`} isAnimationActive={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+
+  const renderThreePhaseChart = (title: string, keys: string[], colors: string[], unit: string) => (
+    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm flex flex-col h-64">
+      <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">{title}</div>
+      <div className="flex-1 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} />
+            <XAxis dataKey="time" tickFormatter={(t) => `${(t * 1000).toFixed(0)}`} stroke="#94a3b8" style={{ fontSize: 9, fontFamily: 'monospace' }} />
+            <YAxis stroke="#94a3b8" style={{ fontSize: 9, fontFamily: 'monospace' }} domain={['auto', 'auto']} unit={` ${unit}`} />
+            <Tooltip
+              contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '6px' }}
+              labelStyle={{ fontSize: 10, color: '#0ea5e9', fontFamily: 'monospace', fontWeight: 'bold' }}
+              itemStyle={{ fontSize: 10, fontFamily: 'monospace' }}
+              labelFormatter={(lbl) => `Time: ${(lbl * 1000).toFixed(2)} ms`}
+            />
+            {keys.map((k, i) => (
+              <Line key={k} type="monotone" dataKey={k} stroke={colors[i]} strokeWidth={1.5} dot={false} isAnimationActive={false} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#050912] text-slate-100 p-6 md:p-8 font-mono select-none flex flex-col">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-mono select-none flex flex-col">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <Link href="/" className="inline-flex items-center text-cyan-400 hover:text-cyan-300 mb-3 transition-colors text-sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Interactive Simulation
+          <Link href="/" className="inline-flex items-center text-sky-600 hover:text-sky-500 mb-2 transition-colors text-xs font-bold uppercase tracking-wider">
+            <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+            Back to Workspace
           </Link>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-wide flex items-center gap-3">
-            <Activity className="w-8 h-8 text-cyan-400" />
-            Solar Microgrid Analytics Dashboard
+          <h1 className="text-2xl font-bold text-slate-900 tracking-wide flex items-center gap-2">
+            <Activity className="w-6 h-6 text-sky-600" />
+            Simulation Analytics Dashboard
           </h1>
-          <p className="text-slate-400 text-xs md:text-sm mt-1">
-            Dynamic step profiling of solar irradiance (1000 &rarr; 600 &rarr; 200 &rarr; 1000 W/m²) and multi-parameter system response.
+          <p className="text-slate-500 text-xs mt-1">
+            Complete high-resolution telemetry from the Python EMT physics solver.
           </p>
         </div>
 
         <button
-          onClick={handleRunAnalysis}
-          disabled={isLoading}
-          className="self-start md:self-auto flex items-center bg-cyan-600 hover:bg-cyan-500 text-white px-5 py-2.5 rounded shadow-lg shadow-cyan-900/50 transition-all font-bold text-sm disabled:opacity-50"
+          onClick={handleExportCSV}
+          className="flex items-center bg-white border border-slate-300 hover:border-sky-500 hover:text-sky-600 text-slate-700 px-4 py-2 rounded shadow-sm transition-all font-bold text-xs"
         >
-          {isLoading ? (
-            <span className="animate-pulse">Running Solver...</span>
-          ) : (
-            <>
-              <Play className="w-4 h-4 mr-2" fill="currentColor" />
-              Re-Run Analysis
-            </>
-          )}
+          <Download className="w-4 h-4 mr-2" />
+          Export All CSV
         </button>
       </div>
 
-      {/* Grid of Square Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Card 1: Solar Irradiance Profile */}
-        <div className="bg-[#0a1122] rounded-xl border border-amber-500/30 p-4 flex flex-col shadow-xl aspect-square">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-amber-400 flex items-center gap-2">
-              <Sun className="w-4 h-4 text-amber-400" />
-              Solar Irradiance Profile
-            </h2>
-            <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-mono">
-              W/m² Step
-            </span>
+      {/* Grid of Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+        {renderSinglePhaseChart("Solar PV Output", "solarPowerWatts", "#fbbf24", "W")}
+        {renderSinglePhaseChart("Solar DC Voltage", "solarVoltageDc", "#eab308", "V")}
+        {renderSinglePhaseChart("Solar DC Current", "solarCurrentDc", "#ca8a04", "A")}
+        {renderSinglePhaseChart("Solar Irradiance", "solarIrradiance", "#f59e0b", "W/m²")}
+        {renderSinglePhaseChart("DC Link Voltage", "dcLinkVoltage", "#f97316", "V")}
+        {renderThreePhaseChart("Grid Voltage", ["gridVoltageA", "gridVoltageB", "gridVoltageC"], ["#E11D48", "#D97706", "#0284C7"], "V")}
+        {renderThreePhaseChart("Grid Current", ["gridCurrentA", "gridCurrentB", "gridCurrentC"], ["#E11D48", "#D97706", "#0284C7"], "A")}
+        {renderThreePhaseChart("Supply Voltage", ["supplyVoltageA", "supplyVoltageB", "supplyVoltageC"], ["#E11D48", "#D97706", "#0284C7"], "V")}
+        {renderThreePhaseChart("Load Current", ["loadCurrentA", "loadCurrentB", "loadCurrentC"], ["#E11D48", "#D97706", "#0284C7"], "A")}
+        {renderThreePhaseChart("Injecting Voltage (Series)", ["injectingVoltageA", "injectingVoltageB", "injectingVoltageC"], ["#E11D48", "#D97706", "#0284C7"], "V")}
+        {renderThreePhaseChart("Injecting Current (Shunt)", ["injectingCurrentA", "injectingCurrentB", "injectingCurrentC"], ["#E11D48", "#D97706", "#0284C7"], "A")}
+      </div>
+
+      {/* Raw Data Table */}
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <div className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+            Raw Data Telemetry (Microsecond Resolution)
           </div>
-          <p className="text-[11px] text-slate-400 mb-3">Dynamically changing from 1000 &rarr; 600 &rarr; 200 &rarr; 1000 W/m²</p>
-          
-          <div className="flex-1 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="irrGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#fbbf24" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2b4c" vertical={false} />
-                <XAxis dataKey="time" tickFormatter={(t) => `${(t * 1000).toFixed(0)}ms`} stroke="#64748b" style={{ fontSize: '10px' }} />
-                <YAxis stroke="#fbbf24" domain={[0, 1200]} style={{ fontSize: '10px' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#060b13', borderColor: '#fbbf24', borderRadius: '6px', fontSize: '11px' }} />
-                <Area type="stepAfter" dataKey="solarIrradiance" name="Irradiance (W/m²)" stroke="#fbbf24" strokeWidth={2} fill="url(#irrGrad)" isAnimationActive={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <div className="text-xs text-slate-500">{data.length} Sample Points</div>
         </div>
-
-        {/* Card 2: Solar PV Active Power Output */}
-        <div className="bg-[#0a1122] rounded-xl border border-cyan-500/30 p-4 flex flex-col shadow-xl aspect-square">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-cyan-400 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-cyan-400" />
-              Solar PV Active Power Output
-            </h2>
-            <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded font-mono">
-              Watts
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 mb-3">Power output tracking irradiance profile (255.6kW Peak)</p>
-          
-          <div className="flex-1 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="pwrGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2b4c" vertical={false} />
-                <XAxis dataKey="time" tickFormatter={(t) => `${(t * 1000).toFixed(0)}ms`} stroke="#64748b" style={{ fontSize: '10px' }} />
-                <YAxis stroke="#38bdf8" domain={[0, 260000]} style={{ fontSize: '10px' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#060b13', borderColor: '#38bdf8', borderRadius: '6px', fontSize: '11px' }} />
-                <Area type="monotone" dataKey="solarPowerWatts" name="PV Power (W)" stroke="#38bdf8" strokeWidth={2} fill="url(#pwrGrad)" isAnimationActive={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="w-full overflow-x-auto max-h-96">
+          <table className="w-full text-left text-[10px] text-slate-600 border-collapse whitespace-nowrap">
+            <thead className="bg-slate-50 sticky top-0 shadow-sm z-10">
+              <tr>
+                <th className="p-2 border-b border-slate-200 font-bold">Time (s)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Grid V (A)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Grid V (B)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Grid V (C)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Grid I (A)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Grid I (B)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Grid I (C)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Load V (A)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Load I (A)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Inj V (A)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Inj I (A)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">DC Link (V)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Irrad (W/m²)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Solar (W)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((dp, i) => (
+                <tr key={i} className="hover:bg-slate-100 border-b border-slate-100 transition-colors">
+                  <td className="p-2 font-mono bg-slate-50">{dp.time.toFixed(4)}</td>
+                  <td className="p-2">{dp.gridVoltageA.toFixed(1)}</td>
+                  <td className="p-2">{dp.gridVoltageB.toFixed(1)}</td>
+                  <td className="p-2">{dp.gridVoltageC.toFixed(1)}</td>
+                  <td className="p-2">{dp.gridCurrentA.toFixed(1)}</td>
+                  <td className="p-2">{dp.gridCurrentB.toFixed(1)}</td>
+                  <td className="p-2">{dp.gridCurrentC.toFixed(1)}</td>
+                  <td className="p-2">{dp.supplyVoltageA.toFixed(1)}</td>
+                  <td className="p-2">{dp.loadCurrentA.toFixed(1)}</td>
+                  <td className="p-2">{dp.injectingVoltageA.toFixed(1)}</td>
+                  <td className="p-2">{dp.injectingCurrentA.toFixed(1)}</td>
+                  <td className="p-2 font-bold text-orange-600">{dp.dcLinkVoltage.toFixed(1)}</td>
+                  <td className="p-2 font-bold text-yellow-600">{dp.solarIrradiance.toFixed(0)}</td>
+                  <td className="p-2 font-bold text-amber-600">{dp.solarPowerWatts.toFixed(0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        {/* Card 3: DC Link Voltage Stability */}
-        <div className="bg-[#0a1122] rounded-xl border border-orange-500/30 p-4 flex flex-col shadow-xl aspect-square">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-orange-400 flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-orange-400" />
-              DC Link Voltage (Vdc)
-            </h2>
-            <span className="text-[10px] bg-orange-500/20 text-orange-300 border border-orange-500/40 px-1.5 py-0.5 rounded font-mono">
-              700V Target
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 mb-3">DC bus capacitor voltage under dynamic PV generation</p>
-          
-          <div className="flex-1 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2b4c" vertical={false} />
-                <XAxis dataKey="time" tickFormatter={(t) => `${(t * 1000).toFixed(0)}ms`} stroke="#64748b" style={{ fontSize: '10px' }} />
-                <YAxis stroke="#f97316" domain={[500, 750]} style={{ fontSize: '10px' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#060b13', borderColor: '#f97316', borderRadius: '6px', fontSize: '11px' }} />
-                <Line type="monotone" dataKey="dcLinkVoltage" name="DC Link Voltage (V)" stroke="#f97316" strokeWidth={2} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Card 4: 3-Phase Grid Voltage */}
-        <div className="bg-[#0a1122] rounded-xl border border-emerald-500/30 p-4 flex flex-col shadow-xl aspect-square">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              3-Phase Microgrid Voltage (V)
-            </h2>
-            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono">
-              415V RMS
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 mb-3">Microgrid voltage sag disturbance simulation (100ms - 200ms)</p>
-          
-          <div className="flex-1 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2b4c" vertical={false} />
-                <XAxis dataKey="time" tickFormatter={(t) => `${(t * 1000).toFixed(0)}ms`} stroke="#64748b" style={{ fontSize: '10px' }} />
-                <YAxis stroke="#10b981" style={{ fontSize: '10px' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#060b13', borderColor: '#10b981', borderRadius: '6px', fontSize: '11px' }} />
-                <Legend wrapperStyle={{ fontSize: '10px' }} />
-                <Line type="monotone" dataKey="gridVoltageA" name="Phase A" stroke="#f43f5e" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="gridVoltageB" name="Phase B" stroke="#fbbf24" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="gridVoltageC" name="Phase C" stroke="#00f0ff" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Card 5: 3-Phase Load Current */}
-        <div className="bg-[#0a1122] rounded-xl border border-purple-500/30 p-4 flex flex-col shadow-xl aspect-square">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-purple-400 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-purple-400" />
-              Non-Linear Load Current (A)
-            </h2>
-            <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-1.5 py-0.5 rounded font-mono">
-              Harmonics
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 mb-3">Distorted load current with 5th and 7th harmonic components</p>
-          
-          <div className="flex-1 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2b4c" vertical={false} />
-                <XAxis dataKey="time" tickFormatter={(t) => `${(t * 1000).toFixed(0)}ms`} stroke="#64748b" style={{ fontSize: '10px' }} />
-                <YAxis stroke="#a855f7" style={{ fontSize: '10px' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#060b13', borderColor: '#a855f7', borderRadius: '6px', fontSize: '11px' }} />
-                <Legend wrapperStyle={{ fontSize: '10px' }} />
-                <Line type="monotone" dataKey="loadCurrentA" name="Phase A" stroke="#f43f5e" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="loadCurrentB" name="Phase B" stroke="#fbbf24" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="loadCurrentC" name="Phase C" stroke="#00f0ff" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-
       </div>
     </div>
   );

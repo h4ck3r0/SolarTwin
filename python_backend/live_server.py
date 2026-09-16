@@ -9,6 +9,10 @@ import numpy as np
 import joblib
 import math
 
+import joblib
+
+x_scaler = joblib.load("x_scaler.pkl")
+y_scaler = joblib.load("y_scaler.pkl")
 app = FastAPI()
 
 app.add_middleware(

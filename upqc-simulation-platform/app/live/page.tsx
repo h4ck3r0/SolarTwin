@@ -63,18 +63,18 @@ export default function LivePredictionDashboard() {
     const currentValue = current ? current[dataKey] : 0;
     
     return (
-      <div className="flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden relative shadow-2xl">
+      <div className="flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden relative shadow-md">
         <div className="absolute inset-0 opacity-10 pointer-events-none" 
              style={{ 
-               backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)', 
+               backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px)', 
                backgroundSize: '20px 20px' 
              }} 
         />
         
-        <div className="flex items-center justify-between p-4 bg-slate-900/50 backdrop-blur-sm z-10 border-b border-slate-800">
+        <div className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm z-10 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <Icon className="w-5 h-5" style={{ color }} />
-            <h3 className="font-semibold text-slate-300 uppercase tracking-wider text-sm">{title}</h3>
+            <h3 className="font-semibold text-slate-700 uppercase tracking-wider text-sm">{title}</h3>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-mono font-bold" style={{ color }}>
@@ -87,7 +87,7 @@ export default function LivePredictionDashboard() {
         <div className="h-48 w-full p-2 z-10">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={history}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
               <YAxis 
                 domain={['dataMin - 10', 'dataMax + 10']} 
                 hide 
@@ -111,22 +111,22 @@ export default function LivePredictionDashboard() {
   };
 
   return (
-    <div className="min-h-full bg-slate-950 text-white p-6 font-sans">
+    <div className="min-h-full bg-[#F8FAFC] text-slate-900 p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header section */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-800">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-200">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3 tracking-tight">
               <Activity className="w-8 h-8 text-emerald-400" />
               Real-Time Telemetry Dashboard
             </h1>
-            <p className="text-slate-400 mt-1">Live System Monitoring \& Load Forecasting • RNSIT College, Bangalore Weather</p>
+            <p className="text-slate-500 mt-1">Live System Monitoring \& Load Forecasting • RNSIT College, Bangalore Weather</p>
           </div>
           
           {/* Live Weather Feed */}
-          <div className="flex gap-4 bg-slate-900 p-3 rounded-lg border border-slate-800">
-            <div className="flex flex-col items-center px-4 border-r border-slate-700">
+          <div className="flex gap-4 bg-white shadow-sm p-3 rounded-lg border border-slate-200">
+            <div className="flex flex-col items-center px-4 border-r border-slate-200">
               <span className="text-xs text-slate-500 uppercase tracking-widest mb-1">Irradiance</span>
               <div className="flex items-center gap-2">
                 <Sun className="w-4 h-4 text-amber-400" />

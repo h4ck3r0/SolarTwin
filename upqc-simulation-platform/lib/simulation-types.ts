@@ -5,11 +5,25 @@ export interface SimulationParameters {
   solarIrradiance: number; // W/m^2
   solarStringsParallel?: number; // default: 88
   solarModulesSeries?: number; // default: 7
-  solarPanelWatts?: number; // default: 415 W
-  windSpeed: number; // m/s
+  solarPanelWatts?: number; // default: 415 W // m/s
   batterySOC: number; // %
   dcLinkVoltage: number; // V (target DC voltage)
+  isGridConnected?: boolean;
+  simulationDuration?: number;
+  irradianceProfile?: string;
 
+  // Grid & EMT parameters
+  gridResistance?: number; // Ohms
+  gridReactance?: number; // Ohms
+  loadActivePower?: number; // kW
+  loadPowerFactor?: number; // 0.0 to 1.0
+  
+  // Advanced Physics Parameters
+  filterInductance?: number; // mH
+  dcCapacitance?: number; // uF
+  loadTHD?: number; // %
+  kp?: number; // PI Proportional Gain
+  ki?: number; // PI Integral Gain
 }
 
 export interface SimulationDataPoint {
@@ -34,6 +48,16 @@ export interface SimulationDataPoint {
   loadCurrentA: number;
   loadCurrentB: number;
   loadCurrentC: number;
+
+  // Three-phase injecting voltages (V)
+  injectingVoltageA: number;
+  injectingVoltageB: number;
+  injectingVoltageC: number;
+
+  // Three-phase injecting currents (A)
+  injectingCurrentA: number;
+  injectingCurrentB: number;
+  injectingCurrentC: number;
 
 
   // DC link voltage (V)
