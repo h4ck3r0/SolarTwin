@@ -3,20 +3,35 @@ export interface SimulationParameters {
   microgridVoltage: number; // V
   microgridFrequency: number; // Hz
   solarIrradiance: number; // W/m^2
+  solarTemperature?: number; // deg C
   solarStringsParallel?: number; // default: 88
   solarModulesSeries?: number; // default: 7
   solarPanelWatts?: number; // default: 415 W // m/s
   batterySOC: number; // %
+  batteryCapacityKwh?: number; // kWh
   dcLinkVoltage: number; // V (target DC voltage)
   isGridConnected?: boolean;
   simulationDuration?: number;
   irradianceProfile?: string;
+  isTripped?: boolean; // Universal disconnect switch
+  
+  // Wind Turbine Parameters
+  windSpeed?: number; // m/s
+  windCutIn?: number; // m/s
+  windCutOut?: number; // m/s
+  windNominalPower?: number; // kW
+  
+  // MPPT Controller Parameters
+  mpptAlgorithm?: string; // 'PO', 'INC', 'CV'
+  mpptStepSize?: number; // V
+  mpptUpdateFreq?: number; // ms
 
   // Grid & EMT parameters
   gridResistance?: number; // Ohms
   gridReactance?: number; // Ohms
   loadActivePower?: number; // kW
   loadPowerFactor?: number; // 0.0 to 1.0
+  loadHarmonicType?: string; // VFD, Rectifier, ArcFurnace, Clean
   
   // Advanced Physics Parameters
   filterInductance?: number; // mH
@@ -68,6 +83,11 @@ export interface SimulationDataPoint {
   solarVoltageDc: number;
   solarCurrentDc: number;
   solarIrradiance: number;
+  solarTemperature: number;
+  
+  // Storage & Wind Telemetry
+  batterySOC?: number;
+  windPowerWatts?: number;
 }
 
 export interface SimulationResult {

@@ -155,7 +155,10 @@ export default function StatisticsPage() {
         {renderSinglePhaseChart("Solar DC Voltage", "solarVoltageDc", "#eab308", "V")}
         {renderSinglePhaseChart("Solar DC Current", "solarCurrentDc", "#ca8a04", "A")}
         {renderSinglePhaseChart("Solar Irradiance", "solarIrradiance", "#f59e0b", "W/m²")}
+        {renderSinglePhaseChart("Solar Temperature", "solarTemperature", "#ef4444", "°C")}
         {renderSinglePhaseChart("DC Link Voltage", "dcLinkVoltage", "#f97316", "V")}
+        {renderSinglePhaseChart("Battery SOC", "batterySOC", "#10b981", "%")}
+        {renderSinglePhaseChart("Wind Power", "windPowerWatts", "#06b6d4", "W")}
         {renderThreePhaseChart("Grid Voltage", ["gridVoltageA", "gridVoltageB", "gridVoltageC"], ["#E11D48", "#D97706", "#0284C7"], "V")}
         {renderThreePhaseChart("Grid Current", ["gridCurrentA", "gridCurrentB", "gridCurrentC"], ["#E11D48", "#D97706", "#0284C7"], "A")}
         {renderThreePhaseChart("Supply Voltage", ["supplyVoltageA", "supplyVoltageB", "supplyVoltageC"], ["#E11D48", "#D97706", "#0284C7"], "V")}

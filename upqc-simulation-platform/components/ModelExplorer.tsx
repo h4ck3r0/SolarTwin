@@ -67,7 +67,7 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
           { id: 'battery', name: 'Battery', nodeId: 'microgrid' },
         ],
       },
-      { id: 'voltage-ctrl', name: 'Voltage Control', nodeId: 'dc-volt-ctrl' },
+      { id: 'mppt-ctrl', name: 'MPPT Controller', nodeId: 'mppt-ctrl' },
       {
         id: 'shunt',
         name: 'Shunt APF',

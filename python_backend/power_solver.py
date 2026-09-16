@@ -4,13 +4,15 @@ from pydantic import BaseModel
 from typing import List
 
 class SimulationParameters(BaseModel):
-    microgridVoltage: float
-    microgridFrequency: float
-    solarIrradiance: float
+    microgridVoltage: float = 415.0
+    microgridFrequency: float = 60.0
+    solarIrradiance: float = 1000.0
+    solarTemperature: float = 25.0
     solarStringsParallel: int = 88
     solarModulesSeries: int = 7
     solarPanelWatts: float = 415.0
     batterySOC: float
+    batteryCapacityKwh: float = 100.0
     dcLinkVoltage: float
     isGridConnected: bool = True
     simulationDuration: float = 0.300
@@ -19,6 +21,7 @@ class SimulationParameters(BaseModel):
     gridReactance: float = 0.2
     loadActivePower: float = 15.0
     loadPowerFactor: float = 0.85
+    loadHarmonicType: str = "Rectifier"
     filterInductance: float = 2.5
     dcCapacitance: float = 2200.0
     loadTHD: float = 28.0
@@ -72,6 +75,7 @@ class SimulationDataPoint(BaseModel):
     solarVoltageDc: float
     solarCurrentDc: float
     solarIrradiance: float
+    solarTemperature: float
 
 def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
     params = req.parameters
@@ -90,28 +94,83 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
 
 
     # Dynamic Topology Compiler
-    has_battery_node = any("battery" in node.id.lower() or "battery" in node.type.lower() for node in topology.nodes)
+    has_battery_node = False
     solar_arrays_power = []
     actual_solar_modules = []
+    wind_power_total = 0.0
+    
+    # Extract connected node IDs from edges
+    connected_node_ids = set()
+    for edge in topology.edges:
+        connected_node_ids.add(edge.source)
+        connected_node_ids.add(edge.target)
     
     for node in topology.nodes:
-        if "solar" in node.id.lower() or "microgrid" in node.type.lower():
-            p_params = node.data.parameters
+        # Require the node to be connected via an edge, unless it's a core un-deletable node
+        if node.id not in connected_node_ids and node.id != "grid-source" and node.id != "critical-load":
+            continue
+            
+        p_params = node.data.parameters
+        if p_params.get('isTripped', False):
+            continue # Physics Isolation Switch
+            
+        n_id = node.id.lower()
+        n_type = node.type.lower()
+        n_label = (node.data.label or "").lower()
+        
+        if "battery" in n_id or "battery" in n_type or "battery" in n_label:
+            has_battery_node = True
+            
+        elif "solar" in n_id or "solar" in n_type or "solar" in n_label:
             # Extract parameters safely, default to global if not specific
             irrad = float(p_params.get('solarIrradiance', params.solarIrradiance))
+            temp = float(p_params.get('solarTemperature', params.solarTemperature))
             strings = int(p_params.get('solarStringsParallel', params.solarStringsParallel))
             modules = int(p_params.get('solarModulesSeries', params.solarModulesSeries))
             watts = float(p_params.get('solarPanelWatts', params.solarPanelWatts))
             
-            power = (irrad / 1000.0) * strings * modules * watts
+            power_stc = strings * modules * watts
+            # Thermal Degradation Physics (-0.4% per deg C above 25)
+            temp_diff = temp - 25.0
+            power = power_stc * (irrad / 1000.0) * (1 - 0.004 * temp_diff)
+            power = max(power, 0.0)
+            
             solar_arrays_power.append(power)
             actual_solar_modules.append(modules)
-            
             pp.create_sgen(net, bus=b_load, p_mw=power / 1e6, q_mvar=0.0, name=node.data.label)
+            
+        elif "mppt" in n_id or "mppt" in n_type or "mppt" in n_label:
+            mppt_params = p_params
+            
+        elif "wind" in n_id or "wind" in n_type or "wind" in n_label:
+            # DFIG Wind Physics
+            v_wind = float(p_params.get('windSpeed', 0.0))
+            v_cutin = float(p_params.get('windCutIn', 3.0))
+            v_cutout = float(p_params.get('windCutOut', 25.0))
+            p_nom = float(p_params.get('windNominalPower', 50.0)) * 1000.0 # to Watts
+            
+            w_power = 0.0
+            if v_wind < v_cutin or v_wind > v_cutout:
+                w_power = 0.0
+            else:
+                # Simplified Cubic Power Curve between cut-in and approx rated (12 m/s)
+                v_rated = 12.0
+                if v_wind >= v_rated:
+                    w_power = p_nom
+                else:
+                    # Power proportional to v^3
+                    k = p_nom / (v_rated**3 - v_cutin**3)
+                    w_power = k * (v_wind**3 - v_cutin**3)
+                    
+            wind_power_total += w_power
+            pp.create_sgen(net, bus=b_load, p_mw=w_power / 1e6, q_mvar=0.0, name=node.data.label)
 
     if not solar_arrays_power:
         # Fallback if no nodes drawn
-        solar_power_watts = (params.solarIrradiance / 1000.0) * params.solarStringsParallel * params.solarModulesSeries * params.solarPanelWatts
+        power_stc = params.solarStringsParallel * params.solarModulesSeries * params.solarPanelWatts
+        temp_diff = params.solarTemperature - 25.0
+        solar_power_watts = power_stc * (params.solarIrradiance / 1000.0) * (1 - 0.004 * temp_diff)
+        solar_power_watts = max(solar_power_watts, 0.0)
         pp.create_sgen(net, bus=b_load, p_mw=solar_power_watts / 1e6, q_mvar=0.0, name="Solar PV")
         effective_modules = params.solarModulesSeries
     else:
@@ -186,6 +245,17 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
     L_grid = params.gridReactance / omega
     tau = L_grid / params.gridResistance if params.gridResistance > 0 else 0.001
     
+    # MPPT State Initialization
+    mppt_algo = mppt_params.get('mpptAlgorithm', 'PO') if 'mppt_params' in locals() else None
+    mppt_step = float(mppt_params.get('mpptStepSize', 1.0)) if 'mppt_params' in locals() else 1.0
+    mppt_freq = int(mppt_params.get('mpptUpdateFreq', 10)) if 'mppt_params' in locals() else 10
+    
+    mppt_v_ref = 35.0 * effective_modules * (1 - 0.003 * (params.solarTemperature - 25.0))
+    mppt_p_prev = 0.0
+    mppt_v_prev = 0.0
+    mppt_i_prev = 0.0
+    mppt_counter = 0
+
     data_points = []
     for time_sec in t:
         phase_A = 0
@@ -204,11 +274,72 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
             else:
                 break
                 
-        # Calculate dynamic solar power (W) by scaling the base_solar_power proportionally
+        # True Voltage Thermal Degradation
+        temp_diff = params.solarTemperature - 25.0
+        v_mpp_ideal = (35.0 * effective_modules) * (1 - 0.003 * temp_diff)
+        v_mpp_ideal = max(v_mpp_ideal, 1.0)
+                
+        # Base power available at current irradiance
         if params.solarIrradiance > 0:
-            dynamic_solar_power = base_solar_power * (current_irradiance / params.solarIrradiance)
+            p_available = base_solar_power * (current_irradiance / params.solarIrradiance)
+        else:
+            p_available = 0.0
+            
+        # Simulating Solar P-V curve (parabola around V_mpp)
+        if p_available > 0:
+            v_err = (mppt_v_ref - v_mpp_ideal) / v_mpp_ideal
+            dynamic_solar_power = p_available * (1 - 2.0 * (v_err ** 2))
+            dynamic_solar_power = max(dynamic_solar_power, 0.0)
         else:
             dynamic_solar_power = 0.0
+            
+        # MPPT Controller Execution
+        # Runs based on configured frequency (1 step = 1ms)
+        if mppt_algo is not None and mppt_counter >= mppt_freq:
+            mppt_counter = 0
+            if dynamic_solar_power > 0:
+                current_v = mppt_v_ref
+                current_p = dynamic_solar_power
+                current_i = current_p / current_v if current_v > 0 else 0
+                
+                delta_p = current_p - mppt_p_prev
+                delta_v = current_v - mppt_v_prev
+                delta_i = current_i - mppt_i_prev
+                
+                if mppt_algo == 'PO':
+                    # Perturb & Observe
+                    if abs(delta_p) > 1.0 and abs(delta_v) > 0:
+                        if delta_p > 0:
+                            if delta_v > 0: mppt_v_ref += mppt_step
+                            else: mppt_v_ref -= mppt_step
+                        else:
+                            if delta_v > 0: mppt_v_ref -= mppt_step
+                            else: mppt_v_ref += mppt_step
+                
+                elif mppt_algo == 'INC':
+                    # Incremental Conductance
+                    if abs(delta_v) < 0.1:
+                        if delta_i > 0.01: mppt_v_ref += mppt_step
+                        elif delta_i < -0.01: mppt_v_ref -= mppt_step
+                    else:
+                        di_dv = delta_i / delta_v
+                        i_v = current_i / current_v if current_v > 0 else 0
+                        
+                        if di_dv > -i_v: mppt_v_ref += mppt_step
+                        elif di_dv < -i_v: mppt_v_ref -= mppt_step
+                        
+                elif mppt_algo == 'CV':
+                    # Constant Voltage (76% of Voc roughly maps to Vmpp_ideal)
+                    mppt_v_ref = v_mpp_ideal
+                    
+                mppt_p_prev = current_p
+                mppt_v_prev = current_v
+                mppt_i_prev = current_i
+        elif mppt_algo is None:
+            # Sub-optimal fixed voltage when MPPT controller is missing or disconnected
+            mppt_v_ref = v_mpp_ideal * 1.25 # 25% off optimum
+            
+        mppt_counter += 1
             
         # Grid Voltage (Ideal source)
         gvA = v_base_peak * np.sin(omega * time_sec + phase_A)
@@ -231,28 +362,49 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
         icB_fund = i_load_peak_true * inrush_env * np.sin(omega * time_sec + phase_B - theta_load)
         icC_fund = i_load_peak_true * inrush_env * np.sin(omega * time_sec + phase_C - theta_load)
                 
-        # Harmonic injection from Non-Linear Load (6-pulse diode bridge signature: 5th, 7th, 11th, 13th)
+        # Harmonic injection from Non-Linear Load
         thd_factor = params.loadTHD / 100.0
         
-        # Phase A Harmonics
-        h5A = (thd_factor * 0.7) * i_load_peak_true * np.sin(5 * (omega * time_sec + phase_A))
-        h7A = (thd_factor * 0.5) * i_load_peak_true * np.sin(7 * (omega * time_sec + phase_A))
-        h11A = (thd_factor * 0.2) * i_load_peak_true * np.sin(11 * (omega * time_sec + phase_A))
+        # Determine signature based on load type
+        h3_mag = 0.0
+        h5_mag = 0.0
+        h7_mag = 0.0
+        h11_mag = 0.0
+        h13_mag = 0.0
         
-        # Phase B Harmonics
-        h5B = (thd_factor * 0.7) * i_load_peak_true * np.sin(5 * (omega * time_sec + phase_B))
-        h7B = (thd_factor * 0.5) * i_load_peak_true * np.sin(7 * (omega * time_sec + phase_B))
-        h11B = (thd_factor * 0.2) * i_load_peak_true * np.sin(11 * (omega * time_sec + phase_B))
+        htype = params.loadHarmonicType.lower()
+        if "vfd" in htype:
+            h5_mag = 0.7; h7_mag = 0.3
+        elif "arc" in htype:
+            h3_mag = 0.6; h5_mag = 0.3; h7_mag = 0.1
+        elif "clean" in htype:
+            pass # No harmonics
+        else:
+            # Default 6-pulse rectifier
+            h5_mag = 0.7; h7_mag = 0.5; h11_mag = 0.2; h13_mag = 0.1
+            
+        h3A = (thd_factor * h3_mag) * i_load_peak_true * np.sin(3 * (omega * time_sec + phase_A))
+        h5A = (thd_factor * h5_mag) * i_load_peak_true * np.sin(5 * (omega * time_sec + phase_A))
+        h7A = (thd_factor * h7_mag) * i_load_peak_true * np.sin(7 * (omega * time_sec + phase_A))
+        h11A = (thd_factor * h11_mag) * i_load_peak_true * np.sin(11 * (omega * time_sec + phase_A))
+        h13A = (thd_factor * h13_mag) * i_load_peak_true * np.sin(13 * (omega * time_sec + phase_A))
         
-        # Phase C Harmonics
-        h5C = (thd_factor * 0.7) * i_load_peak_true * np.sin(5 * (omega * time_sec + phase_C))
-        h7C = (thd_factor * 0.5) * i_load_peak_true * np.sin(7 * (omega * time_sec + phase_C))
-        h11C = (thd_factor * 0.2) * i_load_peak_true * np.sin(11 * (omega * time_sec + phase_C))
+        h3B = (thd_factor * h3_mag) * i_load_peak_true * np.sin(3 * (omega * time_sec + phase_B))
+        h5B = (thd_factor * h5_mag) * i_load_peak_true * np.sin(5 * (omega * time_sec + phase_B))
+        h7B = (thd_factor * h7_mag) * i_load_peak_true * np.sin(7 * (omega * time_sec + phase_B))
+        h11B = (thd_factor * h11_mag) * i_load_peak_true * np.sin(11 * (omega * time_sec + phase_B))
+        h13B = (thd_factor * h13_mag) * i_load_peak_true * np.sin(13 * (omega * time_sec + phase_B))
+        
+        h3C = (thd_factor * h3_mag) * i_load_peak_true * np.sin(3 * (omega * time_sec + phase_C))
+        h5C = (thd_factor * h5_mag) * i_load_peak_true * np.sin(5 * (omega * time_sec + phase_C))
+        h7C = (thd_factor * h7_mag) * i_load_peak_true * np.sin(7 * (omega * time_sec + phase_C))
+        h11C = (thd_factor * h11_mag) * i_load_peak_true * np.sin(11 * (omega * time_sec + phase_C))
+        h13C = (thd_factor * h13_mag) * i_load_peak_true * np.sin(13 * (omega * time_sec + phase_C))
         
         # Total Physical Load Current
-        lcA = icA_fund + h5A + h7A + h11A
-        lcB = icB_fund + h5B + h7B + h11B
-        lcC = icC_fund + h5C + h7C + h11C
+        lcA = icA_fund + h3A + h5A + h7A + h11A + h13A
+        lcB = icB_fund + h3B + h5B + h7B + h11B + h13B
+        lcC = icC_fund + h3C + h5C + h7C + h11C + h13C
         
         # True Solar Injection (In-phase with grid voltage, Unity PF)
         i_solar_rms = dynamic_solar_power / (np.sqrt(3) * v_ll) if v_ll > 0 else 0
@@ -264,9 +416,9 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
         
         # UPQC Instantaneous p-q Theory Shunt Compensation (Harmonic Filtering)
         comp_efficiency = min(1.0, params.kp * 0.1 + params.ki * 0.01)
-        inj_cA = - (h5A + h7A + h11A) * comp_efficiency
-        inj_cB = - (h5B + h7B + h11B) * comp_efficiency
-        inj_cC = - (h5C + h7C + h11C) * comp_efficiency
+        inj_cA = - (h3A + h5A + h7A + h11A + h13A) * comp_efficiency
+        inj_cB = - (h3B + h5B + h7B + h11B + h13B) * comp_efficiency
+        inj_cC = - (h3C + h5C + h7C + h11C + h13C) * comp_efficiency
         
         # True Nodal KCL: Grid Current = Load - Solar + UPQC Shunt
         gcA = lcA - sol_A + inj_cA
@@ -285,24 +437,47 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
             inj_cA, inj_cB, inj_cC = 0.0, 0.0, 0.0
             inj_vA, inj_vB, inj_vC = 0.0, 0.0, 0.0
         
-        # True DC Link Physics
+        # True DC Link & Battery Physics
         actual_dc = params.dcLinkVoltage
         blackout = False
         
-        if not params.isGridConnected and not has_battery_node:
-            p_deficit_watts = (p_mw * 1000) - dynamic_solar_power
-            if p_deficit_watts > 0:
-                # Capacitor discharge equation: V(t) = sqrt(V0^2 - 2*P*t/C)
-                energy_discharged = p_deficit_watts * time_sec
-                v_squared = (params.dcLinkVoltage ** 2) - (2 * energy_discharged) / (params.dcCapacitance * 1e-6)
-                if v_squared > 0:
-                    actual_dc = np.sqrt(v_squared)
+        current_soc = params.batterySOC
+        dt_hours = step_size / 3600.0
+        p_deficit_watts = (p_mw * 1000) - dynamic_solar_power - wind_power_total
+        
+        if not params.isGridConnected:
+            if has_battery_node:
+                if p_deficit_watts > 0:
+                    # Discharging
+                    p_batt = p_deficit_watts
+                    c_rate_limit = params.batteryCapacityKwh * 1000.0 # 1C discharge limit in Watts
+                    if p_batt > c_rate_limit:
+                        blackout = True # Battery tripped on overcurrent!
+                    else:
+                        current_soc -= (p_batt / (params.batteryCapacityKwh * 1000.0)) * dt_hours * 100.0
+                        if current_soc <= 0:
+                            current_soc = 0.0
+                            blackout = True # Battery empty
                 else:
-                    actual_dc = 0.0
-            
-            # If DC link drops below AC peak voltage, inverter fails (Blackout)
-            if actual_dc < v_base_peak:
-                blackout = True
+                    # Charging
+                    p_batt = p_deficit_watts # Negative
+                    current_soc -= (p_batt / (params.batteryCapacityKwh * 1000.0)) * dt_hours * 100.0
+                    current_soc = min(current_soc, 100.0)
+                
+                params.batterySOC = current_soc
+            else:
+                if p_deficit_watts > 0:
+                    # Capacitor discharge equation: V(t) = sqrt(V0^2 - 2*P*t/C)
+                    energy_discharged = p_deficit_watts * time_sec
+                    v_squared = (params.dcLinkVoltage ** 2) - (2 * energy_discharged) / (params.dcCapacitance * 1e-6)
+                    if v_squared > 0:
+                        actual_dc = np.sqrt(v_squared)
+                    else:
+                        actual_dc = 0.0
+                
+                # If DC link drops below AC peak voltage, inverter fails (Blackout)
+                if actual_dc < v_base_peak:
+                    blackout = True
 
         if blackout:
             # Complete blackout of load and UPQC
@@ -316,6 +491,8 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
             ripple = (p_mw * 1000) / (params.dcCapacitance * 1e-6 * 2 * omega) * np.sin(2 * omega * time_sec)
             actual_dc += ripple
         
+        actual_solar_voltage = max(mppt_v_ref, 0.1)
+
         dp = SimulationDataPoint(
             time=round(time_sec, 4),
             gridVoltageA=round(gvA, 2),
@@ -338,9 +515,12 @@ def run_simulation(req: SimulationRequest) -> List[SimulationDataPoint]:
             injectingCurrentC=round(inj_cC, 2),
             dcLinkVoltage=round(actual_dc, 2),
             solarPowerWatts=round(dynamic_solar_power, 2),
-            solarVoltageDc=round(35.0 * effective_modules, 2),
-            solarCurrentDc=round(dynamic_solar_power / (35.0 * effective_modules), 2) if effective_modules > 0 else 0,
-            solarIrradiance=round(current_irradiance, 2)
+            solarVoltageDc=round(actual_solar_voltage, 2),
+            solarCurrentDc=round(dynamic_solar_power / actual_solar_voltage, 2),
+            solarIrradiance=round(current_irradiance, 2),
+            solarTemperature=round(params.solarTemperature, 2),
+            batterySOC=round(current_soc, 6),
+            windPowerWatts=round(wind_power_total, 2)
         )
         data_points.append(dp)
         

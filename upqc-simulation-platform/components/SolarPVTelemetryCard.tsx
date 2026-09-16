@@ -85,13 +85,13 @@ export default function SolarPVTelemetryCard({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded px-2.5 py-1.5 font-mono select-none text-[10px] shadow-lg flex items-center justify-between gap-2 overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded px-3 sm:px-4 py-2 sm:py-3 font-mono select-none text-xs shadow-lg flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 sm:gap-4 overflow-hidden">
       {/* 1. Left: 5 Compact Solar Modules Graphic */}
-      <div className="flex items-center space-x-1.5 border-r border-slate-200 pr-2.5">
-        <div className="flex items-center space-x-1">
+      <div className="flex items-center space-x-2 border-r border-slate-200 pr-3 sm:pr-4">
+        <div className="flex items-center space-x-1 sm:space-x-1.5">
           {[1, 2, 3, 4, 5, 6, 7].map((idx) => (
             <div key={idx} className="flex flex-col items-center">
-              <div className={`w-5 h-7 rounded-[2px] border flex flex-col justify-between p-0.5 ${
+              <div className={`w-5 h-7 sm:w-6 sm:h-8 rounded-[2px] border flex flex-col justify-between p-0.5 ${
                 currentPowerWatts > 0 ? 'bg-amber-950/40 border-amber-500/60 shadow-sm shadow-amber-500/20' : 'bg-slate-100 border-slate-300'
               }`}>
                 <div className="grid grid-cols-2 gap-[1px] h-full">
@@ -104,42 +104,42 @@ export default function SolarPVTelemetryCard({
           ))}
         </div>
 
-        <div className="hidden xl:flex items-center space-x-1 text-slate-500 text-[8px] pl-1 font-sans">
+        <div className="hidden xl:flex items-center space-x-1 text-slate-500 text-[10px] pl-1 font-sans">
           <span>──</span>
-          <span className="font-mono text-slate-500 text-[7.5px]">Series String</span>
+          <span className="font-mono text-slate-500 text-[9px] sm:text-[10px]">Series String</span>
         </div>
       </div>
 
       {/* 2. Three Compact Metric Display Boxes */}
-      <div className="flex items-center space-x-2">
-        <div className="bg-white border border-slate-200 px-2 py-0.5 rounded min-w-[95px]">
-          <div className="text-[7.5px] font-bold text-slate-500 uppercase">TOTAL ACTIVE POWER</div>
-          <div className="text-xs font-bold text-amber-600 leading-tight">
-            {currentPowerWatts} <span className="text-[9px] text-amber-600">W</span>
+      <div className="flex items-center space-x-2 sm:space-x-3 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0">
+        <div className="bg-white border border-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded min-w-[110px] sm:min-w-[130px]">
+          <div className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase">TOTAL ACTIVE POWER</div>
+          <div className="text-sm sm:text-base font-bold text-amber-600 leading-tight">
+            {currentPowerWatts} <span className="text-[10px] sm:text-xs text-amber-600">W</span>
           </div>
-          <div className="text-[7px] text-slate-500">{currentPowerKw} kW</div>
+          <div className="text-[8.5px] sm:text-[9.5px] text-slate-500">{currentPowerKw} kW</div>
         </div>
 
-        <div className="bg-white border border-slate-200 px-2 py-0.5 rounded min-w-[95px]">
-          <div className="text-[7.5px] font-bold text-slate-500 uppercase">STRING VOLTAGE</div>
-          <div className="text-xs font-bold text-sky-600 leading-tight">
-            {voltageDc} <span className="text-[9px] text-sky-600">V DC</span>
+        <div className="bg-white border border-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded min-w-[110px] sm:min-w-[130px]">
+          <div className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase">STRING VOLTAGE</div>
+          <div className="text-sm sm:text-base font-bold text-sky-600 leading-tight">
+            {voltageDc} <span className="text-[10px] sm:text-xs text-sky-600">V DC</span>
           </div>
-          <div className="text-[7px] text-slate-500">{avgModules} panels series</div>
+          <div className="text-[8.5px] sm:text-[9.5px] text-slate-500">{avgModules} panels series</div>
         </div>
 
-        <div className="bg-white border border-slate-200 px-2 py-0.5 rounded min-w-[95px]">
-          <div className="text-[7.5px] font-bold text-slate-500 uppercase">ARRAY CURRENT</div>
-          <div className="text-xs font-bold text-emerald-600 leading-tight">
-            {currentDc.toFixed(2)} <span className="text-[9px] text-emerald-600">A DC</span>
+        <div className="bg-white border border-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded min-w-[110px] sm:min-w-[130px]">
+          <div className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase">ARRAY CURRENT</div>
+          <div className="text-sm sm:text-base font-bold text-emerald-600 leading-tight">
+            {currentDc.toFixed(2)} <span className="text-[10px] sm:text-xs text-emerald-600">A DC</span>
           </div>
-          <div className="text-[7px] text-slate-500">{totalStrings} strings parallel</div>
+          <div className="text-[8.5px] sm:text-[9.5px] text-slate-500">{totalStrings} strings parallel</div>
         </div>
       </div>
 
       {/* 3. Compact Horizontal Irradiance Selector */}
-      <div className="flex items-center space-x-1 border-l border-r border-slate-200 px-2">
-        <span className="text-[7.5px] font-bold text-sky-600 uppercase mr-0.5">IRR</span>
+      <div className="flex items-center space-x-1.5 border-l border-r border-slate-200 px-3 sm:px-4 py-1">
+        <span className="text-[9px] sm:text-[10px] font-bold text-sky-600 uppercase mr-1">IRR</span>
         {[
           { label: '1000 W/m²', val: 1000 },
           { label: '800 W/m²', val: 800 },
@@ -151,7 +151,7 @@ export default function SolarPVTelemetryCard({
             key={item.val}
             type="button"
             onClick={() => setPresetIrradiance(item.val)}
-            className={`px-1.5 py-0.5 rounded text-[8px] font-mono transition-colors border ${
+            className={`px-2 py-1 sm:px-2.5 sm:py-1 rounded text-[9px] sm:text-[10px] font-mono transition-colors border ${
               avgIrradiance === item.val
                 ? 'bg-amber-500/20 text-amber-600 font-bold border-amber-500/60'
                 : 'bg-white text-slate-500 border-slate-200 hover:text-slate-700'
@@ -163,17 +163,17 @@ export default function SolarPVTelemetryCard({
       </div>
 
       {/* 4. One-Line Telemetry Callout */}
-      <div className="flex items-center space-x-1.5 bg-white border border-slate-200 px-2 py-1 rounded max-w-[190px]">
-        <div className="text-[7.5px] text-emerald-600 font-mono leading-tight truncate">
+      <div className="hidden md:flex items-center space-x-2 bg-white border border-slate-200 px-3 py-1.5 rounded max-w-[250px] sm:max-w-[320px]">
+        <div className="text-[9px] sm:text-[10.5px] text-emerald-600 font-mono leading-tight truncate">
           {textSummary}
         </div>
         <button
           type="button"
           onClick={handleCopyText}
-          className="flex-shrink-0 px-1 py-0.5 rounded bg-slate-100 border border-slate-700 text-slate-700 text-[7.5px] hover:text-amber-600"
+          className="flex-shrink-0 px-1.5 py-1 rounded bg-slate-100 border border-slate-300 text-slate-700 text-[10px] hover:text-amber-600"
           title="Copy Telemetry Text"
         >
-          {copied ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5" />}
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
     </div>

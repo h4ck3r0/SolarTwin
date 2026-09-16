@@ -30,6 +30,7 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
     if (id === 'critical-load') return 'border-emerald-500 bg-white text-emerald-800';
     if (id === 'diode-rectifier') return 'border-rose-500 bg-white text-rose-800';
     if (id === 'scope-block') return 'border-sky-500 bg-white text-sky-700';
+    if (id.includes('mppt')) return 'border-amber-500 bg-amber-50 text-amber-800 font-bold';
     return 'border-slate-300 bg-white text-slate-700';
   };
 
@@ -39,15 +40,16 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
     if (id === 'series-inv' || id === 'shunt-inv') return <Zap className="w-5 h-5" />;
     if (id === 'microgrid') return <Sun className="w-5 h-5 text-amber-600" />;
     if (id === 'scope-block') return <Eye className="w-5 h-5 animate-pulse text-sky-600" />;
+    if (id.includes('mppt')) return <Cpu className="w-5 h-5 text-amber-600" />;
     return <Cpu className="w-5 h-5" />;
   };
 
   return (
     <div className={`p-2 rounded border-2 shadow-lg transition-all font-mono select-none ${getNodeStyling()} ${selected ? 'ring-2 ring-cyan-400 scale-105' : ''} min-w-[140px]`}>
-      <Handle type="target" position={Position.Left} id="l" style={{ background: '#00f0ff', width: '6px', height: '6px' }} />
-      <Handle type="source" position={Position.Right} id="r" style={{ background: '#00f0ff', width: '6px', height: '6px' }} />
-      <Handle type="target" position={Position.Top} id="t" style={{ background: '#f59e0b', width: '6px', height: '6px' }} />
-      <Handle type="source" position={Position.Bottom} id="b" style={{ background: '#f59e0b', width: '6px', height: '6px' }} />
+      <Handle type="target" position={Position.Left} id="l" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
+      <Handle type="source" position={Position.Right} id="r" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
+      <Handle type="target" position={Position.Top} id="t" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
+      <Handle type="source" position={Position.Bottom} id="b" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
 
       <div className="flex items-center space-x-2">
         <div className="flex-shrink-0">{renderIcon()}</div>
@@ -55,11 +57,6 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
           <div className="text-[10px] font-bold tracking-wide uppercase leading-tight">{data.label}</div>
           {data.details && (
             <div className="text-[8px] opacity-80 whitespace-pre-line leading-none mt-0.5">{data.details}</div>
-          )}
-          {data.parameters && (
-            <div className="text-[7.5px] opacity-90 mt-1 font-bold">
-              {Object.entries(data.parameters).map(([k, v]) => `${k}:${v}`).join(' ')}
-            </div>
           )}
         </div>
       </div>
@@ -143,7 +140,7 @@ export default function SimulationCanvas({
   }, [zoomIn, zoomOut, fitView, setZoomInRef, setZoomOutRef, setFitViewRef, getTopologyRef, setUpdateNodeRef, nodes, edges, setNodes]);
 
   const onConnect = useCallback(
-    (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Edge | Connection) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#0ea5e9', strokeWidth: 2 } }, eds)),
     [setEdges]
   );
 
