@@ -13,6 +13,7 @@ export interface SimulationParameters {
   isGridConnected?: boolean;
   simulationDuration?: number;
   irradianceProfile?: string;
+  temperatureProfile?: string;
   isTripped?: boolean; // Universal disconnect switch
   
   // Wind Turbine Parameters

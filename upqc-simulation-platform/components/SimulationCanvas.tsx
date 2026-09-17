@@ -46,10 +46,20 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
 
   return (
     <div className={`p-2 rounded border-2 shadow-lg transition-all font-mono select-none ${getNodeStyling()} ${selected ? 'ring-2 ring-cyan-400 scale-105' : ''} min-w-[140px]`}>
-      <Handle type="target" position={Position.Left} id="l" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
-      <Handle type="source" position={Position.Right} id="r" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
-      <Handle type="target" position={Position.Top} id="t" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
-      <Handle type="source" position={Position.Bottom} id="b" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
+      
+      {/* Left */}
+      <Handle type="target" position={Position.Left} id="l-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
+      <Handle type="source" position={Position.Left} id="l-s" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
+      {/* Right */}
+      <Handle type="target" position={Position.Right} id="r-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
+      <Handle type="source" position={Position.Right} id="r-s" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
+      {/* Top */}
+      <Handle type="target" position={Position.Top} id="t-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
+      <Handle type="source" position={Position.Top} id="t-s" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
+      {/* Bottom */}
+      <Handle type="target" position={Position.Bottom} id="b-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
+      <Handle type="source" position={Position.Bottom} id="b-s" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
+
 
       <div className="flex items-center space-x-2">
         <div className="flex-shrink-0">{renderIcon()}</div>
@@ -94,40 +104,13 @@ export default function SimulationCanvas({
   setUpdateNodeRef,
   onNodeDoubleClick,
 }: SimulationCanvasProps) {
-  const initialNodesState = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      const savedTopology = localStorage.getItem('solar_twin_topology');
-      if (savedTopology) {
-        try {
-          const { nodes: savedNodes } = JSON.parse(savedTopology);
-          if (savedNodes && savedNodes.length > 0) return savedNodes;
-        } catch (e) {}
-      }
-    }
-    return initialNodes;
-  }, []);
-
-  const initialEdgesState = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      const savedTopology = localStorage.getItem('solar_twin_topology');
-      if (savedTopology) {
-        try {
-          const { edges: savedEdges } = JSON.parse(savedTopology);
-          if (savedEdges && savedEdges.length > 0) return savedEdges;
-        } catch (e) {}
-      }
-    }
-    return initialEdges;
-  }, []);
+  const initialNodesState = useMemo(() => initialNodes, []);
+  const initialEdgesState = useMemo(() => initialEdges, []);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodesState);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdgesState);
   const { zoomIn, zoomOut, fitView, project } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    localStorage.setItem('solar_twin_topology', JSON.stringify({ nodes, edges }));
-  }, [nodes, edges]);
 
   useEffect(() => {
     setZoomInRef.current = () => zoomIn({ duration: 300 });

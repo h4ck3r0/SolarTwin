@@ -36,6 +36,7 @@ export default function StatisticsPage() {
     setIsLoading(false);
   }, []);
 
+
   const handleExportCSV = () => {
     if (data.length === 0) return;
     const headers = Object.keys(data[0]);
@@ -43,10 +44,14 @@ export default function StatisticsPage() {
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const link = document.createElement('a');
     link.setAttribute('href', encodeURI(csvContent));
-    link.setAttribute('download', 'simulation_full_telemetry.csv');
+    link.setAttribute('download', 'simulation_subset.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDownloadFullRaw = () => {
+    window.open('/api/simulation/download', '_blank');
   };
 
   if (isLoading) {
@@ -193,7 +198,11 @@ export default function StatisticsPage() {
                 <th className="p-2 border-b border-slate-200 font-bold">Inj I (A)</th>
                 <th className="p-2 border-b border-slate-200 font-bold">DC Link (V)</th>
                 <th className="p-2 border-b border-slate-200 font-bold">Irrad (W/m²)</th>
-                <th className="p-2 border-b border-slate-200 font-bold">Solar (W)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Temp (°C)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Vpv (V)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Ipv (A)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">Ppv (W)</th>
+                <th className="p-2 border-b border-slate-200 font-bold">IGBT Tj (°C)</th>
               </tr>
             </thead>
             <tbody>
@@ -212,7 +221,11 @@ export default function StatisticsPage() {
                   <td className="p-2">{dp.injectingCurrentA.toFixed(1)}</td>
                   <td className="p-2 font-bold text-orange-600">{dp.dcLinkVoltage.toFixed(1)}</td>
                   <td className="p-2 font-bold text-yellow-600">{dp.solarIrradiance.toFixed(0)}</td>
+                  <td className="p-2 font-bold text-rose-500">{dp.solarTemperature?.toFixed(1) || '25.0'}</td>
+                  <td className="p-2 font-bold text-amber-600">{dp.solarVoltageDc?.toFixed(1) || '0.0'}</td>
+                  <td className="p-2 font-bold text-amber-600">{dp.solarCurrentDc?.toFixed(2) || '0.00'}</td>
                   <td className="p-2 font-bold text-amber-600">{dp.solarPowerWatts.toFixed(0)}</td>
+                  <td className="p-2 font-bold text-red-600">{dp.igbtTemperature?.toFixed(1) || '25.0'}</td>
                 </tr>
               ))}
             </tbody>

@@ -182,6 +182,7 @@ export default function ParameterPanel({
           </div>
           {renderInput('Duration', 'simulationDuration', 's', 0.1, 0.1, 10)}
           {renderStringInput('Irradiance Profile (s:W/m2)', 'irradianceProfile')}
+          {renderStringInput('Temperature Profile (s:degC)', 'temperatureProfile')}
         </div>
         
         {/* Section 1: AC Microgrid Bus */}

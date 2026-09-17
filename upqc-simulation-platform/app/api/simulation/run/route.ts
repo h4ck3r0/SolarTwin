@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       isGridConnected: body.parameters?.isGridConnected ?? true,
       simulationDuration: Number(body.parameters?.simulationDuration ?? 0.3),
       irradianceProfile: body.parameters?.irradianceProfile ?? '0:1000',
+      temperatureProfile: body.parameters?.temperatureProfile ?? '0:25',
     };
     const topology = body.topology || { nodes: [], edges: [] };
 

@@ -9,11 +9,13 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { Activity, Sun, Thermometer, Zap, ActivitySquare } from "lucide-react";
+import { Activity, Sun, Thermometer, Zap, ActivitySquare, Download } from "lucide-react";
+import { Tooltip } from "recharts";
 
 export default function LivePredictionDashboard() {
   const [history, setHistory] = useState<any[]>([]);
   const [current, setCurrent] = useState<any>(null);
+  const [historyLimit, setHistoryLimit] = useState<number>(60);
 
   useEffect(() => {
     const fetchLiveData = async () => {
@@ -45,6 +47,20 @@ export default function LivePredictionDashboard() {
     const interval = setInterval(fetchLiveData, 1000);
     return () => clearInterval(interval);
   }, []);
+
+
+  const handleExportCSV = () => {
+    if (history.length === 0) return;
+    const headers = Object.keys(history[0]);
+    const rows = history.map(dp => headers.map(k => dp[k]));
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', 'live_history.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const ChartMonitor = ({
     title,
@@ -86,8 +102,10 @@ export default function LivePredictionDashboard() {
 
         <div className="h-48 w-full p-2 z-10">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={history}>
+            <LineChart data={history.slice(-historyLimit)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <XAxis dataKey="Temp" hide />
+              <Tooltip contentStyle={{ backgroundColor: "#1e293b", color: "#f8fafc", border: "none", borderRadius: "8px" }} itemStyle={{ color: color }} />
               <YAxis 
                 domain={['dataMin - 10', 'dataMax + 10']} 
                 hide 
@@ -124,6 +142,28 @@ export default function LivePredictionDashboard() {
             <p className="text-slate-500 mt-1">Live System Monitoring \& Load Forecasting • RNSIT College, Bangalore Weather</p>
           </div>
           
+
+          {/* Controls */}
+          <div className="flex gap-4 items-center">
+            <select 
+              value={historyLimit} 
+              onChange={(e) => setHistoryLimit(Number(e.target.value))}
+              className="bg-white border border-slate-200 text-slate-700 text-sm rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            >
+              <option value={60}>Last 1 Minute</option>
+              <option value={300}>Last 5 Minutes</option>
+              <option value={900}>Last 15 Minutes</option>
+              <option value={3600}>Last 1 Hour</option>
+            </select>
+            <button 
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-semibold transition-colors shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              Export History
+            </button>
+          </div>
+
           {/* Live Weather Feed */}
           <div className="flex gap-4 bg-white shadow-sm p-3 rounded-lg border border-slate-200">
             <div className="flex flex-col items-center px-4 border-r border-slate-200">

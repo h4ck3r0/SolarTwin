@@ -68,7 +68,7 @@ except Exception as e:
 # Initialize with some typical average values from the dataset so it doesn't crash on start
 state_buffer = np.zeros((SEQ_LENGTH, len(ALL_INPUT_COLS)))
 history_data = [] # To send historical points to the frontend for charting
-MAX_HISTORY = 60 # Keep 60 seconds (or ticks) of history
+MAX_HISTORY = 3600 # Keep 60 seconds (or ticks) of history
 
 current_weather = {"Irradiance": 0, "Temp": 0}
 client = httpx.AsyncClient()
