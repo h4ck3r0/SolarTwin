@@ -180,21 +180,18 @@ export default function NodeParameterModal({
           <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[60vh] opacity-100 transition-opacity" style={{ opacity: localParams.isTripped ? 0.5 : 1.0, pointerEvents: localParams.isTripped ? 'none' : 'auto' }}>
             {isSolar && (
               <>
-                {renderInput('Parallel Strings', 'solarStringsParallel', 'units', 1, 1, 500)}
+                <div className="bg-amber-50 border border-amber-200 rounded p-2 mb-2">
+                  <p className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
+                    <span>☀️</span> Irradiance &amp; Temperature are shared globally
+                  </p>
+                  <p className="text-[10px] text-amber-600 mt-0.5">
+                    Set them in the Engine → Irradiance/Temp Profile fields. Multiple panels share the same sky conditions.
+                  </p>
+                </div>
+                {renderInput('Parallel Strings', 'solarStringsParallel', 'strings', 1, 1, 500)}
                 {renderInput('Series Modules', 'solarModulesSeries', 'units', 1, 1, 50)}
-                {renderInput('Panel Rating', 'solarPanelWatts', 'W', 5, 50, 1000)}
-                
-                <button
-                  type="button"
-                  onClick={fetchLiveWeather}
-                  className="w-full flex items-center justify-center space-x-2 bg-amber-100 hover:bg-amber-200 text-amber-800 py-2 rounded border border-amber-300 transition-colors mt-2 mb-2"
-                >
-                  <CloudLightning className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Sync Live Weather</span>
-                </button>
-
-                {renderInput('Irradiance', 'solarIrradiance', 'W/m²', 50, 0, 1500)}
-                {renderInput('Temperature', 'solarTemperature', '°C', 1, -20, 100)}
+                {renderInput('Panel Rating', 'solarPanelWatts', 'Wp', 5, 50, 1000)}
+                {renderInput('Module Vmpp (STC)', 'solarVmpp', 'V', 0.5, 10, 80)}
               </>
             )}
             

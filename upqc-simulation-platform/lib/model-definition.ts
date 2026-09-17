@@ -74,12 +74,36 @@ export const initialNodes: Node<ElectricalNodeData>[] = [
   {
     id: 'microgrid',
     type: 'microgrid',
-    position: { x: 450, y: 650 },
+    position: { x: 350, y: 650 },
     data: {
       label: 'SOLAR PV ARRAY',
       type: 'microgrid',
-      details: '7S×88P 415W Solar\nIrradiance: 1000 W/m²',
-      parameters: { 'Total PV': '255.6 kW' },
+      details: '7S × 88P × 415Wp\n= 255.6 kW (STC)',
+      parameters: { solarStringsParallel: 88, solarModulesSeries: 7, solarPanelWatts: 415, solarVmpp: 34.1 },
+    },
+  },
+  {
+    id: 'battery-storage',
+    type: 'electrical',
+    position: { x: 600, y: 650 },
+    data: {
+      label: 'BATTERY BESS',
+      type: 'source',
+      details: '100kWh BESS\nParallel DC Bus',
+      parameters: { batterySOC: 80, batteryCapacityKwh: 100 },
+      active: false,
+    },
+  },
+  {
+    id: 'wind-turbine',
+    type: 'microgrid',
+    position: { x: 150, y: 650 },
+    data: {
+      label: 'WIND TURBINE',
+      type: 'microgrid',
+      details: '50kW Turbine\nParallel AC Bus',
+      parameters: { windSpeed: 8.0, windCutIn: 3.0, windCutOut: 25.0, windNominalPower: 50.0 },
+      active: false,
     },
   },
   {
@@ -204,5 +228,29 @@ export const initialEdges: Edge[] = [
     targetHandle: 'l-t',
     animated: true,
     style: { stroke: '#64748b', strokeWidth: 1.5, strokeDasharray: '4' },
+  },
+  // Battery BESS connects in PARALLEL to DC Link (shared DC bus — both absorb/inject DC power)
+  {
+    id: 'e-battery-dc',
+    source: 'battery-storage',
+    target: 'dc-link',
+    sourceHandle: 't-s',
+    targetHandle: 'b-t',
+    animated: true,
+    style: { stroke: '#10b981', strokeWidth: 2.5 },
+    label: '∥ DC Bus',
+    labelStyle: { fontSize: 9, fill: '#10b981', fontWeight: 'bold' },
+  },
+  // Wind turbine connects in PARALLEL to AC Bus (it is a voltage-following inverter at PCC)
+  {
+    id: 'e-wind-ac',
+    source: 'wind-turbine',
+    target: 'ac-bus',
+    sourceHandle: 'r-s',
+    targetHandle: 'l-t',
+    animated: true,
+    style: { stroke: '#06b6d4', strokeWidth: 2.5 },
+    label: '∥ AC Bus',
+    labelStyle: { fontSize: 9, fill: '#06b6d4', fontWeight: 'bold' },
   },
 ];

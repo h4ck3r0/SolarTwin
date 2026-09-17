@@ -31,6 +31,8 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
     if (id === 'diode-rectifier') return 'border-rose-500 bg-white text-rose-800';
     if (id === 'scope-block') return 'border-sky-500 bg-white text-sky-700';
     if (id.includes('mppt')) return 'border-amber-500 bg-amber-50 text-amber-800 font-bold';
+    if (id.includes('battery') || id.includes('bess')) return 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold';
+    if (id.includes('wind') || id.includes('turbine')) return 'border-cyan-500 bg-cyan-50 text-cyan-800 font-bold';
     return 'border-slate-300 bg-white text-slate-700';
   };
 
@@ -41,11 +43,18 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
     if (id === 'microgrid') return <Sun className="w-5 h-5 text-amber-600" />;
     if (id === 'scope-block') return <Eye className="w-5 h-5 animate-pulse text-sky-600" />;
     if (id.includes('mppt')) return <Cpu className="w-5 h-5 text-amber-600" />;
+    if (id.includes('battery') || id.includes('bess')) return <span className="text-lg font-black text-emerald-600">⚡</span>;
+    if (id.includes('wind') || id.includes('turbine')) return <span className="text-lg font-black text-cyan-600">🌀</span>;
     return <Cpu className="w-5 h-5" />;
   };
 
+  // Show dimmed/dashed border if node is marked inactive (disconnected)
+  const isDisconnected = data.active === false;
+
   return (
-    <div className={`p-2 rounded border-2 shadow-lg transition-all font-mono select-none ${getNodeStyling()} ${selected ? 'ring-2 ring-cyan-400 scale-105' : ''} min-w-[140px]`}>
+    <div className={`p-2 rounded border-2 shadow-lg transition-all font-mono select-none min-w-[140px]
+      ${isDisconnected ? 'border-slate-200 bg-slate-50 text-slate-300 opacity-50 border-dashed' : getNodeStyling()}
+      ${selected ? 'ring-2 ring-cyan-400 scale-105' : ''}`}>
       
       {/* Left */}
       <Handle type="target" position={Position.Left} id="l-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
@@ -91,6 +100,8 @@ interface SimulationCanvasProps {
   getTopologyRef: React.MutableRefObject<(() => { nodes: any[]; edges: any[] }) | null>;
   setUpdateNodeRef: React.MutableRefObject<((id: string, data: any) => void) | null>;
   onNodeDoubleClick?: (event: React.MouseEvent, node: any) => void;
+  /** Called whenever edges change — allows parent to reactively update connectedNodeIds */
+  onTopologyChange?: (nodeIds: Set<string>, edges: any[]) => void;
 }
 
 export default function SimulationCanvas({
@@ -103,6 +114,7 @@ export default function SimulationCanvas({
   getTopologyRef,
   setUpdateNodeRef,
   onNodeDoubleClick,
+  onTopologyChange,
 }: SimulationCanvasProps) {
   const initialNodesState = useMemo(() => initialNodes, []);
   const initialEdgesState = useMemo(() => initialEdges, []);
@@ -122,8 +134,42 @@ export default function SimulationCanvas({
     };
   }, [zoomIn, zoomOut, fitView, setZoomInRef, setZoomOutRef, setFitViewRef, getTopologyRef, setUpdateNodeRef, nodes, edges, setNodes]);
 
+  // Notify parent of topology changes ONLY when edges change
+  useEffect(() => {
+    if (onTopologyChange) {
+      const ids = new Set(edges.flatMap((e: any) => [e.source, e.target]));
+      onTopologyChange(ids, edges);
+    }
+  }, [edges]); // Omit onTopologyChange to avoid infinite loop from parent re-renders
+
+  // Separate effect: update battery/wind node active flags when edges change ONLY
+  // (kept separate from the main effect to avoid the nodes→setNodes infinite loop)
+  useEffect(() => {
+    const OPTIONAL = ['battery', 'wind'];
+    const connectedSet = new Set(edges.flatMap((e: any) => [e.source, e.target]));
+    setNodes((nds) => {
+      let changed = false;
+      const next = nds.map((n) => {
+        if (!OPTIONAL.some(kw => n.id.includes(kw))) return n;
+        const shouldBeActive = connectedSet.has(n.id);
+        if (!!n.data.active === shouldBeActive) return n;
+        changed = true;
+        return { ...n, data: { ...n.data, active: shouldBeActive } };
+      });
+      return changed ? next : nds; // return same reference if nothing changed → no re-render
+    });
+  }, [edges, setNodes]);
+
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#0ea5e9', strokeWidth: 2 } }, eds)),
+    [setEdges]
+  );
+
+  // Double-click an edge to disconnect (remove it from topology)
+  const onEdgeDoubleClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    },
     [setEdges]
   );
 
@@ -172,7 +218,11 @@ export default function SimulationCanvas({
         onConnect={onConnect}
         onNodeClick={(event, node) => onSelectNode(node.id)}
         onNodeDoubleClick={onNodeDoubleClick}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onPaneClick={() => onSelectNode(null)}
+        deleteKeyCode="Delete"
+        multiSelectionKeyCode="Shift"
+        edgesUpdatable={true}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.1 }}
@@ -180,12 +230,39 @@ export default function SimulationCanvas({
         <Background color="#e2e8f0" gap={18} size={1} />
 
         {/* Canvas HUD matching exact screenshot design */}
-        <Panel position="top-left" className="m-3 p-3 bg-white/95 text-slate-800 rounded-md border border-slate-200 font-mono text-[10px] space-y-1 shadow-md max-w-[210px]">
-          <div className="font-bold text-sky-600 uppercase border-b border-cyan-900/50 pb-1 mb-1 tracking-wider text-[9px]">
-            CANVAS HUD
+        <Panel position="top-left" className="m-3 p-3 bg-white/95 text-slate-800 rounded-md border border-slate-200 font-mono text-[10px] space-y-1 shadow-md max-w-[220px]">
+          <div className="font-bold text-sky-600 uppercase border-b border-slate-200 pb-1 mb-1 tracking-wider text-[9px]">
+            TOPOLOGY STATUS
           </div>
-          <div>Mode <span className="text-sky-600 font-bold">OFF-GRID MICROGRID</span></div>
-          <div>Solar Array <span className="text-amber-600 font-bold">7S×88P 415W (255.6kW)</span></div>
+          {(() => {
+            const connectedIds = new Set(edges.flatMap(e => [e.source, e.target]));
+            const hasBattery = [...connectedIds].some(id => id.includes('battery') || id.includes('bess'));
+            const hasWind = [...connectedIds].some(id => id.includes('wind') || id.includes('turbine'));
+            const solarNodes = nodes.filter(n => connectedIds.has(n.id) && (n.id.includes('solar') || n.id.includes('microgrid') || n.id.includes('pv')));
+            return (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="opacity-60">Nodes</span>
+                  <span className="font-bold text-slate-700">{nodes.length} / edges: {edges.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="opacity-60">☀️ Solar</span>
+                  <span className={solarNodes.length > 0 ? 'text-amber-600 font-bold' : 'text-slate-400'}>{solarNodes.length > 0 ? `${solarNodes.length} array(s) connected` : 'not connected'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="opacity-60">⚡ Battery</span>
+                  <span className={hasBattery ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{hasBattery ? '∥ DC Bus' : 'not connected'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="opacity-60">🌀 Wind</span>
+                  <span className={hasWind ? 'text-cyan-600 font-bold' : 'text-slate-400'}>{hasWind ? '∥ AC Bus' : 'not connected'}</span>
+                </div>
+                <div className="mt-1 border-t border-slate-100 pt-1 text-[8px] text-slate-400">
+                  Double-click a wire to disconnect
+                </div>
+              </>
+            );
+          })()}
         </Panel>
       </ReactFlow>
     </div>

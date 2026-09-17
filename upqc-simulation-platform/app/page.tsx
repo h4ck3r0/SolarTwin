@@ -13,12 +13,13 @@ import { SimulationParameters, SimulationDataPoint, SimulationStatus } from '@/l
 
 const DEFAULT_PARAMETERS: SimulationParameters = {
   microgridVoltage: 415,
-  microgridFrequency: 60,
+  microgridFrequency: 50,
   solarIrradiance: 1000,
   solarTemperature: 25,
   solarStringsParallel: 88,
   solarModulesSeries: 7,
   solarPanelWatts: 415,
+  solarVmpp: 34.1,
   batterySOC: 80,
   batteryCapacityKwh: 100,
   dcLinkVoltage: 700,
@@ -57,6 +58,8 @@ export default function WorkspacePage() {
   const [results, setResults] = useState<SimulationDataPoint[]>([]);
   const [resultsCollapsed, setResultsCollapsed] = useState<boolean>(false);
   const [editingNode, setEditingNode] = useState<{id: string, type: string, label: string} | null>(null);
+  // Reactive connected node IDs — updated whenever canvas edges change
+  const [connectedNodeIds, setConnectedNodeIds] = useState<Set<string>>(new Set());
 
   const zoomInRef = useRef<(() => void) | null>(null);
   const zoomOutRef = useRef<(() => void) | null>(null);
@@ -86,8 +89,8 @@ export default function WorkspacePage() {
 
     abortControllerRef.current = new AbortController();
 
-    const runDurationMs = 2500;
-    const finalSimTime = 0.3000;
+    const finalSimTime = parameters.simulationDuration ?? 0.3;
+    const runDurationMs = Math.max(2500, finalSimTime * 8000);
     const incrementInterval = 50;
     const timeStep = finalSimTime / (runDurationMs / incrementInterval);
 
@@ -192,7 +195,7 @@ export default function WorkspacePage() {
           onUpdateParameters={handleApplyParameters}
           onUpdateNode={(id, params) => {
             if (updateNodeRef.current) updateNodeRef.current(id, params);
-            setParameters(p => ({...p}));
+            setParameters(p => ({...p, ...params}));
           }}
           isSimulating={status === 'RUNNING'}
         />
@@ -218,6 +221,15 @@ export default function WorkspacePage() {
             getTopologyRef={getTopologyRef}
             setUpdateNodeRef={updateNodeRef}
             onNodeDoubleClick={(e, node) => setEditingNode({ id: node.id, type: node.type, label: node.data?.label || '' })}
+            onTopologyChange={(ids) => {
+              setConnectedNodeIds((prev) => {
+                if (prev.size !== ids.size) return new Set(ids);
+                for (const id of ids) {
+                  if (!prev.has(id)) return new Set(ids);
+                }
+                return prev; // No change, return exact same Set reference to avoid re-render
+              });
+            }}
           />
         </ReactFlowProvider>
 
@@ -233,7 +245,7 @@ export default function WorkspacePage() {
             onApply={(id, params) => {
               if (updateNodeRef.current) {
                 updateNodeRef.current(id, params);
-                setParameters(p => ({...p}));
+                setParameters(p => ({...p, ...params}));
               }
             }}
           />
@@ -243,11 +255,12 @@ export default function WorkspacePage() {
           selectedNodeType={selectedNodeId ? getTopologyRef.current?.().nodes.find((n: any) => n.id === selectedNodeId)?.type : undefined}
           globalParameters={parameters}
           nodeParameters={selectedNodeId ? getTopologyRef.current?.().nodes.find((n: any) => n.id === selectedNodeId)?.data?.parameters : undefined}
+          connectedNodeIds={connectedNodeIds}
           onApply={handleApplyParameters}
           onApplyNode={(id, params) => {
             if (updateNodeRef.current) {
                updateNodeRef.current(id, params);
-               setParameters(p => ({...p})); // force ui refresh
+               setParameters(p => ({...p, ...params})); // force ui refresh
             }
           }}
           onReset={handleResetParameters}

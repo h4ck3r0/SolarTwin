@@ -12,6 +12,8 @@ interface ParameterPanelProps {
   onApply: (params: SimulationParameters) => void;
   onApplyNode?: (nodeId: string, params: Partial<SimulationParameters>) => void;
   onReset: () => void;
+  /** Live edges from ReactFlow — used to detect which components are connected */
+  connectedNodeIds?: Set<string>;
 }
 
 export default function ParameterPanel({
@@ -22,6 +24,7 @@ export default function ParameterPanel({
   onApply,
   onApplyNode,
   onReset,
+  connectedNodeIds = new Set(),
 }: ParameterPanelProps) {
   const [localParams, setLocalParams] = useState<any>({ ...globalParameters, ...(nodeParameters || {}) });
 
@@ -92,18 +95,16 @@ export default function ParameterPanel({
     max = 100000
   ) => {
   
-  const nodeName = (selectedNodeId || '').toLowerCase() + " " + (selectedNodeType || '').toLowerCase();
-  const isSolar = nodeName.includes('solar') || nodeName.includes('pv');
-  const isGrid = nodeName.includes('grid');
-  const isLoad = nodeName.includes('load');
-  const isUPQC = nodeName.includes('upqc') || nodeName.includes('filter');
-  const isBattery = nodeName.includes('battery');
-  
-  const showEngine = !selectedNodeId;
-  const showGrid = !selectedNodeId || isGrid;
-  const showSolar = !selectedNodeId || isSolar || isBattery;
-  const showLoad = !selectedNodeId || isLoad;
-  const showUPQC = !selectedNodeId || isUPQC;
+  // Topology-driven section visibility
+  // A section is shown only when the corresponding node type is wired in the canvas
+  const hasSolar   = [...connectedNodeIds].some(id => id.includes('solar') || id.includes('microgrid') || id.includes('pv'));
+  const hasBattery = [...connectedNodeIds].some(id => id.includes('battery') || id.includes('bess'));
+  const hasWind    = [...connectedNodeIds].some(id => id.includes('wind') || id.includes('turbine'));
+  const hasGrid    = [...connectedNodeIds].some(id => id.includes('grid'));
+  const hasLoad    = [...connectedNodeIds].some(id => id.includes('load'));
+  const hasUPQC    = [...connectedNodeIds].some(id => id.includes('series') || id.includes('shunt') || id.includes('upqc'));
+  // If nothing is connected yet (fresh canvas), show everything
+  const nothingConnected = connectedNodeIds.size === 0;
 
   return (
       <div className="space-y-1">
@@ -154,18 +155,16 @@ export default function ParameterPanel({
     </div>
   );
 
-  const nodeName = (selectedNodeId || '').toLowerCase() + " " + (selectedNodeType || '').toLowerCase();
-  const isSolar = nodeName.includes('solar') || nodeName.includes('pv');
-  const isGrid = nodeName.includes('grid');
-  const isLoad = nodeName.includes('load');
-  const isUPQC = nodeName.includes('upqc') || nodeName.includes('filter');
-  const isBattery = nodeName.includes('battery');
-  
-  const showEngine = !selectedNodeId;
-  const showGrid = !selectedNodeId || isGrid;
-  const showSolar = !selectedNodeId || isSolar || isBattery;
-  const showLoad = !selectedNodeId || isLoad;
-  const showUPQC = !selectedNodeId || isUPQC;
+  // Topology-driven section visibility
+  // A section is shown only when the corresponding node type is wired in the canvas
+  const hasSolar   = [...connectedNodeIds].some(id => id.includes('solar') || id.includes('microgrid') || id.includes('pv'));
+  const hasBattery = [...connectedNodeIds].some(id => id.includes('battery') || id.includes('bess'));
+  const hasWind    = [...connectedNodeIds].some(id => id.includes('wind') || id.includes('turbine'));
+  const hasGrid    = [...connectedNodeIds].some(id => id.includes('grid'));
+  const hasLoad    = [...connectedNodeIds].some(id => id.includes('load'));
+  const hasUPQC    = [...connectedNodeIds].some(id => id.includes('series') || id.includes('shunt') || id.includes('upqc'));
+  // If nothing is connected yet (fresh canvas), show everything
+  const nothingConnected = connectedNodeIds.size === 0;
 
   return (
     <div className="w-48 bg-white border-l border-slate-200 flex flex-col h-full overflow-hidden text-slate-700 select-none font-mono text-[10px]">
@@ -174,26 +173,106 @@ export default function ParameterPanel({
         <span>Global Settings</span>
       </div>
 
-      <form onSubmit={handleApply} className="flex-1 overflow-y-auto p-3.5 space-y-4">
-        {/* Section 0: Simulation Engine */}
-        <div className="space-y-3 pt-2 pb-2">
-          <div className="border-b border-slate-200 pb-1">
-            <h3 className="text-[10px] font-bold text-indigo-700 uppercase">Engine Settings</h3>
-          </div>
+      
+      <form onSubmit={(e) => { e.preventDefault(); handleApply(e as any); }} className="flex-1 overflow-y-auto p-3.5 space-y-5">
+
+        {/* ── Simulation Engine — always visible ───────────── */}
+        <div className="space-y-2">
+          <h3 className="text-[9px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1">Engine</h3>
           {renderInput('Duration', 'simulationDuration', 's', 0.1, 0.1, 10)}
-          {renderStringInput('Irradiance Profile (s:W/m2)', 'irradianceProfile')}
-          {renderStringInput('Temperature Profile (s:degC)', 'temperatureProfile')}
+          {renderStringInput('Irradiance Profile (t:W/m²)', 'irradianceProfile')}
+          {renderStringInput('Temperature Profile (t:°C)', 'temperatureProfile')}
         </div>
-        
-        {/* Section 1: AC Microgrid Bus */}
-        <div className="space-y-3 pt-2">
-          <div className="border-b border-slate-200 pb-1">
-            <h3 className="text-[10px] font-bold text-emerald-700 uppercase">AC Microgrid Base</h3>
+
+        {/* ── AC Microgrid ─ show if grid node connected ────── */}
+        {(nothingConnected || hasGrid) && (
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-100 pb-1">AC Microgrid</h3>
+            {renderInput('Nominal Voltage', 'microgridVoltage', 'V', 5, 100, 1000)}
+            {renderInput('Frequency', 'microgridFrequency', 'Hz', 1, 40, 60)}
+            {renderInput('Grid Resistance', 'gridResistance', 'Ω', 0.01, 0, 10)}
+            {renderInput('Grid Reactance', 'gridReactance', 'Ω', 0.01, 0, 10)}
           </div>
-          {renderInput('Nominal Voltage', 'microgridVoltage', 'V', 5, 100, 1000)}
-          {renderInput('Frequency', 'microgridFrequency', 'Hz', 1, 40, 60)}
-        </div>
+        )}
+
+        {/* ── Load ─ show if load node connected ───────────── */}
+        {(nothingConnected || hasLoad) && (
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-black text-rose-700 uppercase tracking-widest border-b border-rose-100 pb-1">Load</h3>
+            {renderInput('Active Power', 'loadActivePower', 'kW', 1, 0, 2000)}
+            {renderInput('Power Factor', 'loadPowerFactor', 'cosφ', 0.01, 0.1, 1.0)}
+            {renderSelect('Harmonic Type', 'loadHarmonicType', ['Rectifier', 'VFD', 'ArcFurnace', 'Clean'])}
+            {renderInput('Custom THD', 'loadTHD', '%', 1, 0, 100)}
+          </div>
+        )}
+
+        {/* ── Solar PV ─ show if solar node connected ───────── */}
+        {(nothingConnected || hasSolar) && (
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-black text-amber-700 uppercase tracking-widest border-b border-amber-100 pb-1">
+              Solar PV {!nothingConnected && hasSolar && <span className="text-[8px] font-normal text-amber-500 ml-1">● connected</span>}
+            </h3>
+            <button type="button" onClick={fetchLiveWeather}
+              className="w-full flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 py-1.5 rounded border border-amber-200 text-[9px] font-bold uppercase tracking-wide transition-colors">
+              <CloudLightning className="w-3 h-3" /> Sync Live Weather
+            </button>
+            {renderInput('Irradiance', 'solarIrradiance', 'W/m²', 50, 0, 1500)}
+            {renderInput('Panel Temp', 'solarTemperature', '°C', 1, -20, 100)}
+            {renderInput('Parallel Strings', 'solarStringsParallel', 'strings', 1, 1, 500)}
+            {renderInput('Series Modules', 'solarModulesSeries', 'units', 1, 1, 50)}
+            {renderInput('Panel Watt-Peak', 'solarPanelWatts', 'Wp', 5, 50, 1000)}
+            {renderInput('Module Vmpp (STC)', 'solarVmpp', 'V', 0.5, 10, 80)}
+          </div>
+        )}
+
+        {/* ── Battery ─ show only if battery node connected ──── */}
+        {(nothingConnected || hasBattery) && (
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-black text-sky-700 uppercase tracking-widest border-b border-sky-100 pb-1">
+              Battery BESS {!nothingConnected && hasBattery && <span className="text-[8px] font-normal text-sky-500 ml-1">⚡ ∥ DC Bus</span>}
+            </h3>
+            {!hasBattery && !nothingConnected && (
+              <div className="text-[9px] text-slate-400 italic text-center py-1">
+                Connect battery node to DC Link to enable
+              </div>
+            )}
+            {renderInput('State of Charge', 'batterySOC', '%', 1, 0, 100)}
+            {renderInput('Capacity', 'batteryCapacityKwh', 'kWh', 10, 0, 10000)}
+          </div>
+        )}
+
+        {/* ── UPQC ─ show if UPQC/inverter node connected ───── */}
+        {(nothingConnected || hasUPQC) && (
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-black text-purple-700 uppercase tracking-widest border-b border-purple-100 pb-1">UPQC</h3>
+            {renderInput('DC Link Voltage', 'dcLinkVoltage', 'V', 10, 100, 2000)}
+            {renderInput('Filter Inductance', 'filterInductance', 'mH', 0.1, 0.1, 100)}
+            {renderInput('DC Capacitance', 'dcCapacitance', 'μF', 10, 10, 50000)}
+            {renderInput('Kp (PI)', 'kp', 'gain', 0.1, 0, 100)}
+            {renderInput('Ki (PI)', 'ki', 'gain', 1, 0, 500)}
+          </div>
+        )}
+
+        {/* ── Wind ─ show only if wind turbine node connected ── */}
+        {(nothingConnected || hasWind) && (
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-black text-cyan-700 uppercase tracking-widest border-b border-cyan-100 pb-1">
+              Wind Turbine {!nothingConnected && hasWind && <span className="text-[8px] font-normal text-cyan-500 ml-1">🌀 ∥ AC Bus</span>}
+            </h3>
+            {!hasWind && !nothingConnected && (
+              <div className="text-[9px] text-slate-400 italic text-center py-1">
+                Connect wind turbine to AC Bus to enable
+              </div>
+            )}
+            {renderInput('Wind Speed', 'windSpeed', 'm/s', 0.5, 0, 40)}
+            {renderInput('Cut-In Speed', 'windCutIn', 'm/s', 0.5, 0, 10)}
+            {renderInput('Cut-Out Speed', 'windCutOut', 'm/s', 1, 15, 45)}
+            {renderInput('Nominal Power', 'windNominalPower', 'kW', 10, 0, 10000)}
+          </div>
+        )}
+
       </form>
+
 
       {/* Action Buttons */}
       <div className="p-3 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-2">
