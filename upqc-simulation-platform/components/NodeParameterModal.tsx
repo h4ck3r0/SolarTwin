@@ -28,7 +28,7 @@ export default function NodeParameterModal({
     setLocalParams({ ...globalParameters, ...(nodeParameters || {}) });
   }, [globalParameters, nodeParameters, nodeId]);
 
-  const handleChange = (key: keyof SimulationParameters, value: number) => {
+  const handleChange = (key: keyof SimulationParameters, value: any) => {
     setLocalParams((prev: any) => ({
       ...prev,
       [key]: value,
@@ -37,7 +37,18 @@ export default function NodeParameterModal({
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
-    onApply(nodeId, localParams);
+    const finalParams: any = { ...localParams };
+    for (const k in finalParams) {
+      if (typeof finalParams[k] === 'string') {
+        if (finalParams[k] === '') {
+            finalParams[k] = 0;
+        } else {
+            const parsed = Number(finalParams[k]);
+            if (!isNaN(parsed)) finalParams[k] = parsed;
+        }
+      }
+    }
+    onApply(nodeId, finalParams);
     onClose();
   };
 
@@ -89,7 +100,7 @@ export default function NodeParameterModal({
         min={min}
         max={max}
         value={localParams[key] ?? ''}
-        onChange={(e) => handleChange(key, parseFloat(e.target.value) || 0)}
+        onChange={(e) => handleChange(key, e.target.value)}
         className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-sm text-slate-900 font-mono focus:border-sky-500 focus:outline-none"
       />
     </div>
@@ -259,9 +270,7 @@ export default function NodeParameterModal({
             {isMPPT && (
               <>
                 {renderSelect('Tracking Algorithm', 'mpptAlgorithm', [
-                  { value: 'PO', label: 'Perturb & Observe (Classic)' },
-                  { value: 'INC', label: 'Incremental Conductance' },
-                  { value: 'CV', label: 'Constant Voltage (76% Voc)' }
+                  'Perturb & Observe', 'Incremental Conductance', 'Constant Voltage'
                 ])}
                 {renderInput('Voltage Step Size', 'mpptStepSize', 'V', 0.1, 0.1, 10.0)}
                 {renderInput('Tracking Frequency', 'mpptUpdateFreq', 'ms', 1, 1, 1000)}

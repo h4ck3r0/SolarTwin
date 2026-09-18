@@ -32,7 +32,7 @@ export default function ParameterPanel({
     setLocalParams({ ...globalParameters, ...(nodeParameters || {}) });
   }, [globalParameters, selectedNodeId, nodeParameters]);
 
-  const handleChange = (key: keyof SimulationParameters, value: number) => {
+  const handleChange = (key: keyof SimulationParameters, value: any) => {
     setLocalParams((prev: any) => ({
       ...prev,
       [key]: value,
@@ -41,10 +41,21 @@ export default function ParameterPanel({
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalParams: any = { ...localParams };
+    for (const k in finalParams) {
+      if (typeof finalParams[k] === 'string') {
+        if (finalParams[k] === '') {
+            finalParams[k] = 0;
+        } else {
+            const parsed = Number(finalParams[k]);
+            if (!isNaN(parsed)) finalParams[k] = parsed;
+        }
+      }
+    }
     if (selectedNodeId && onApplyNode) {
-        onApplyNode(selectedNodeId, localParams);
+        onApplyNode(selectedNodeId, finalParams);
     } else {
-        onApply(localParams as SimulationParameters);
+        onApply(finalParams as SimulationParameters);
     }
   };
 
@@ -94,19 +105,8 @@ export default function ParameterPanel({
     min = 0,
     max = 100000
   ) => {
-  
-  // Topology-driven section visibility
-  // A section is shown only when the corresponding node type is wired in the canvas
-  const hasSolar   = [...connectedNodeIds].some(id => id.includes('solar') || id.includes('microgrid') || id.includes('pv'));
-  const hasBattery = [...connectedNodeIds].some(id => id.includes('battery') || id.includes('bess'));
-  const hasWind    = [...connectedNodeIds].some(id => id.includes('wind') || id.includes('turbine'));
-  const hasGrid    = [...connectedNodeIds].some(id => id.includes('grid'));
-  const hasLoad    = [...connectedNodeIds].some(id => id.includes('load'));
-  const hasUPQC    = [...connectedNodeIds].some(id => id.includes('series') || id.includes('shunt') || id.includes('upqc'));
-  // If nothing is connected yet (fresh canvas), show everything
-  const nothingConnected = connectedNodeIds.size === 0;
-
-  return (
+    // FIX BUG-10: removed dead topology flag block that was computed here but never used
+    return (
       <div className="space-y-1">
         <label className="text-[9.5px] font-bold text-slate-600 uppercase tracking-wide flex justify-between">
           <span>{label}</span>
@@ -118,7 +118,7 @@ export default function ParameterPanel({
           min={min}
           max={max}
           value={localParams[key] ?? ''}
-          onChange={(e) => handleChange(key, parseFloat(e.target.value) || 0)}
+          onChange={(e) => handleChange(key, e.target.value)}
           className="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-xs text-slate-900 font-mono focus:border-sky-500 focus:outline-none"
         />
       </div>

@@ -29,17 +29,26 @@ export default function SolarPVTelemetryCard({
   let totalStrings = 0;
   let avgModules = 0;
   let avgIrradiance = 0;
+  let maxVoltage = 0;
 
   if (solarNodes.length > 0) {
     solarNodes.forEach(node => {
       const p = node.data?.parameters || {};
-      const strings = p.solarStringsParallel ?? 88;
-      const mods = p.solarModulesSeries ?? 7;
-      const rating = p.solarPanelWatts ?? 415;
-      const irr = p.solarIrradiance ?? 1000;
+      const strings = p.solarStringsParallel ?? parameters.solarStringsParallel ?? 88;
+      const mods = p.solarModulesSeries ?? parameters.solarModulesSeries ?? 7;
+      const rating = p.solarPanelWatts ?? parameters.solarPanelWatts ?? 415;
+      const irr = p.solarIrradiance ?? parameters.solarIrradiance ?? 1000;
+      const temp = p.solarTemperature ?? parameters.solarTemperature ?? 25;
+      const vmpp = p.solarVmpp ?? parameters.solarVmpp ?? 34.1;
       
       const cap = strings * mods * rating;
       totalCapacityWatts += cap;
+      
+      const dT = temp - 25.0;
+      const Vm = Math.max(1.0, vmpp * (1.0 - 0.003 * dT));
+      const Va = Vm * mods;
+      maxVoltage = Math.max(maxVoltage, Va);
+      
       currentPowerWatts += cap * Math.max(0, irr / 1000);
       totalStrings += strings;
       avgModules += mods;
@@ -52,16 +61,23 @@ export default function SolarPVTelemetryCard({
     const strings = parameters.solarStringsParallel ?? 88;
     const mods = parameters.solarModulesSeries ?? 7;
     const rating = parameters.solarPanelWatts ?? 415;
+    const temp = parameters.solarTemperature ?? 25;
+    const vmpp = parameters.solarVmpp ?? 34.1;
+    
     totalCapacityWatts = strings * mods * rating;
     avgIrradiance = parameters.solarIrradiance ?? 1000;
     currentPowerWatts = totalCapacityWatts * Math.max(0, avgIrradiance / 1000);
     totalStrings = strings;
     avgModules = mods;
+    
+    const dT = temp - 25.0;
+    const Vm = Math.max(1.0, vmpp * (1.0 - 0.003 * dT));
+    maxVoltage = Vm * mods;
   }
 
   const currentPowerKw = (currentPowerWatts / 1000).toFixed(3);
   
-  const voltageDc = currentPowerWatts > 0 ? 510.3 : 0;
+  const voltageDc = currentPowerWatts > 0 ? Math.round(maxVoltage * 10) / 10 : 0;
   const currentDc = voltageDc > 0 ? Math.round((currentPowerWatts / voltageDc) * 100) / 100 : 0;
 
   const textSummary = `P: ${currentPowerWatts.toFixed(1)}W • V: ${voltageDc}Vdc • I: ${currentDc}A • Irr: ${avgIrradiance}W/m²`;

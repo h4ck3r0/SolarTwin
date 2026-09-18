@@ -3,11 +3,12 @@
 import React from 'react';
 import { Play, Square, RotateCcw, ZoomIn, ZoomOut, Maximize, LineChart as ChartIcon, Activity } from 'lucide-react';
 import Link from 'next/link';
-import { SimulationStatus } from '@/lib/simulation-types';
+import { SimulationStatus, SimulationParameters } from '@/lib/simulation-types';
 
 interface SimulationToolbarProps {
   status: SimulationStatus;
   simulationTime: number;
+  parameters?: SimulationParameters;   // Phase 5.5: for dynamic PV badge
   onRun: () => void;
   onStop: () => void;
   onReset: () => void;
@@ -19,6 +20,7 @@ interface SimulationToolbarProps {
 export default function SimulationToolbar({
   status,
   simulationTime,
+  parameters,
   onRun,
   onStop,
   onReset,
@@ -26,6 +28,16 @@ export default function SimulationToolbar({
   onZoomOut,
   onFitView,
 }: SimulationToolbarProps) {
+  // Phase 5.5: compute badge string dynamically from current parameters
+  const pvBadge = parameters
+    ? (() => {
+        const s = parameters.solarModulesSeries ?? 7;
+        const p = parameters.solarStringsParallel ?? 88;
+        const w = parameters.solarPanelWatts ?? 415;
+        const kw = ((s * p * w) / 1000).toFixed(1);
+        return `${s}S×${p}P ${w}W PV (${kw} kW)`;
+      })()
+    : '7S×88P 415W PV (255.6 kW)';
   return (
     <div className="h-12 sm:h-14 border-b border-slate-200 bg-white text-slate-800 flex items-center justify-between px-3 sm:px-4 select-none font-mono text-xs sm:text-sm">
       {/* Title & Branding */}
@@ -38,7 +50,7 @@ export default function SimulationToolbar({
             UPQC Solar Microgrid Platform
           </h1>
           <span className="hidden lg:inline-block text-[9px] sm:text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-bold">
-            7S×88P 415W PV (255.6 kW)
+            {pvBadge}
           </span>
         </div>
       </div>
@@ -51,7 +63,7 @@ export default function SimulationToolbar({
           className={`flex items-center space-x-1 sm:space-x-1.5 px-3 py-1 sm:px-4 sm:py-1.5 rounded text-xs sm:text-sm font-bold transition-all ${
             status === 'RUNNING'
               ? 'bg-slate-100 text-slate-500 cursor-not-allowed border border-slate-200'
-              : 'bg-emerald-600 hover:bg-emerald-500 text-slate-800 border border-emerald-400/50 shadow-sm'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50 shadow-sm'
           }`}
         >
           <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
@@ -105,7 +117,7 @@ export default function SimulationToolbar({
           <div className="flex items-center space-x-1.5">
             <div className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded font-bold text-[9px] sm:text-xs ${
               status === 'RUNNING' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-              status === 'ERROR' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
+              status === 'FAILED' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
               'bg-slate-100 text-sky-700 border border-slate-200'
             }`}>
               {status}

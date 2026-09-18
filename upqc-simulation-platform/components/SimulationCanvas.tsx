@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useCallback, useState } from 'react';
 import ReactFlow, {
   Background,
   NodeTypes,
@@ -48,8 +48,9 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
     return <Cpu className="w-5 h-5" />;
   };
 
-  // Show dimmed/dashed border if node is marked inactive (disconnected)
-  const isDisconnected = data.active === false;
+  // Show dimmed/dashed border if node is marked inactive (disconnected) or explicitly tripped
+  const isTripped = String(data.parameters?.isTripped) === 'true';
+  const isDisconnected = data.active === false || isTripped;
 
   return (
     <div className={`p-2 rounded border-2 shadow-lg transition-all font-mono select-none min-w-[140px]
@@ -121,8 +122,22 @@ export default function SimulationCanvas({
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodesState);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdgesState);
-  const { zoomIn, zoomOut, fitView, project } = useReactFlow();
+  const { zoomIn, zoomOut, fitView, screenToFlowPosition } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  
+  // Hydration-safe load from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('solar_twin_topology');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.nodes && parsed.nodes.length > 0) setNodes(parsed.nodes);
+        if (parsed.edges) setEdges(parsed.edges);
+      } catch(e) {}
+    }
+    setLoaded(true);
+  }, [setNodes, setEdges]);
 
   useEffect(() => {
     setZoomInRef.current = () => zoomIn({ duration: 300 });
@@ -134,13 +149,20 @@ export default function SimulationCanvas({
     };
   }, [zoomIn, zoomOut, fitView, setZoomInRef, setZoomOutRef, setFitViewRef, getTopologyRef, setUpdateNodeRef, nodes, edges, setNodes]);
 
-  // Notify parent of topology changes ONLY when edges change
+  // Notify parent of topology changes when edges or nodes change
   useEffect(() => {
     if (onTopologyChange) {
       const ids = new Set(edges.flatMap((e: any) => [e.source, e.target]));
       onTopologyChange(ids, edges);
     }
-  }, [edges]); // Omit onTopologyChange to avoid infinite loop from parent re-renders
+  }, [edges, nodes]); // Omit onTopologyChange to avoid infinite loop from parent re-renders
+
+  // Save topology to localStorage on any change so it persists when returning from dashboard
+  useEffect(() => {
+    if (loaded) {
+      localStorage.setItem('solar_twin_topology', JSON.stringify({ nodes, edges }));
+    }
+  }, [nodes, edges, loaded]);
 
   // Separate effect: update battery/wind node active flags when edges change ONLY
   // (kept separate from the main effect to avoid the nodes→setNodes infinite loop)
@@ -183,16 +205,16 @@ export default function SimulationCanvas({
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
       const typeData = event.dataTransfer.getData('application/reactflow');
-      
-      if (!typeData || !reactFlowBounds) return;
+      if (!typeData) return;
 
       const { type, label } = JSON.parse(typeData);
 
-      const position = project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
+      // FIX BUG-11: screenToFlowPosition() replaces deprecated project().
+      // Takes raw screen coords directly — no bounding rect subtraction needed.
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
       });
 
       const newNode = {
@@ -204,7 +226,7 @@ export default function SimulationCanvas({
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [project, setNodes]
+    [screenToFlowPosition, setNodes]
   );
 
 

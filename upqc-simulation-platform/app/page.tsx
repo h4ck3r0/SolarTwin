@@ -44,17 +44,8 @@ export default function WorkspacePage() {
   const [status, setStatus] = useState<SimulationStatus>('IDLE');
   const [simulationTime, setSimulationTime] = useState<number>(0);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [parameters, setParameters] = useState<SimulationParameters>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('solar_twin_params');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch(e) {}
-      }
-    }
-    return { ...DEFAULT_PARAMETERS };
-  });
+  const [parameters, setParameters] = useState<SimulationParameters>({ ...DEFAULT_PARAMETERS });
+  const [isClient, setIsClient] = useState(false);
   const [results, setResults] = useState<SimulationDataPoint[]>([]);
   const [resultsCollapsed, setResultsCollapsed] = useState<boolean>(false);
   const [editingNode, setEditingNode] = useState<{id: string, type: string, label: string} | null>(null);
@@ -71,6 +62,13 @@ export default function WorkspacePage() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    setIsClient(true);
+    const saved = localStorage.getItem('solar_twin_params');
+    if (saved) {
+      try {
+        setParameters(JSON.parse(saved));
+      } catch(e) {}
+    }
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
@@ -122,7 +120,7 @@ export default function WorkspacePage() {
         setResults(result.dataPoints);
         setStatus('COMPLETED');
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        setSimulationTime(0.3000);
+        setSimulationTime(finalSimTime);
         
         // Save to localStorage and redirect
         localStorage.setItem('simulation_results', JSON.stringify(result.dataPoints));
@@ -179,6 +177,7 @@ export default function WorkspacePage() {
       <SimulationToolbar
         status={status}
         simulationTime={simulationTime}
+        parameters={parameters}
         onRun={handleRunSimulation}
         onStop={handleStopSimulation}
         onReset={handleResetSimulation}

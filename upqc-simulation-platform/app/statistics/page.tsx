@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, AreaChart, Area, ReferenceLine,
 } from 'recharts';
-import { SimulationDataPoint } from '@/lib/simulation-types';
+import { SimulationDataPoint, SimulationParameters } from '@/lib/simulation-types';
 import Link from 'next/link';
 import {
   ArrowLeft, Activity, Download, ChevronRight, AlertTriangle,
@@ -131,6 +131,7 @@ function DiagnosticCard({ diag }: { diag: Diagnostic }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function StatisticsPage() {
   const [data, setData] = useState<SimulationDataPoint[]>([]);
+  const [params, setParams] = useState<SimulationParameters | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -139,6 +140,12 @@ export default function StatisticsPage() {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) setData(parsed);
+      } catch (e) { console.error(e); }
+    }
+    const storedParams = localStorage.getItem('solar_twin_params');
+    if (storedParams) {
+      try {
+        setParams(JSON.parse(storedParams));
       } catch (e) { console.error(e); }
     }
     setIsLoading(false);
@@ -229,14 +236,15 @@ export default function StatisticsPage() {
         ],
         fixes: [
           { param: 'solarTemperature', current: `${data[0].solarTemperature?.toFixed(0) || '25'}°C`, recommended: '≤ 35°C (ambient)', why: 'Lower ambient directly reduces T_junction by same delta. Real fix: add forced air or liquid cooling' },
-          { param: 'loadActivePower', current: '15 kW', recommended: 'Derate by 20%', why: 'Reducing load current lowers I²R switching losses inside IGBT module' },
-          { param: 'filterInductance', current: '2.5 mH', recommended: '5–10 mH', why: 'Higher inductance reduces current ripple → lower peak IGBT current → lower switching losses' },
+          { param: 'loadActivePower', current: `${((params?.loadActivePower ?? 15000) / 1000).toFixed(1)} kW`, recommended: 'Derate by 20%', why: 'Reducing load current lowers I²R switching losses inside IGBT module' },
+          { param: 'filterInductance', current: `${params?.filterInductance ?? 2.5} mH`, recommended: '5–10 mH', why: 'Higher inductance reduces current ripple → lower peak IGBT current → lower switching losses' },
         ],
       });
     }
 
-    const minGridV = Math.min(...data.map(d => Math.abs(d.gridVoltageA)));
-    if (minGridV < 150) {
+    const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
+    const minGridV = Math.max(...data.map(d => Math.abs(d.gridVoltageA)));
+    if (!isGridDisconnected && minGridV < 300) {
       results.push({
         id: 'grid-sag',
         severity: 'warning',
@@ -248,8 +256,8 @@ export default function StatisticsPage() {
           `Series injector rating must exceed the sag depth to restore nominal voltage`,
         ],
         fixes: [
-          { param: 'gridReactance', current: '0.2 Ω', recommended: '≤ 0.05 Ω', why: 'Lower grid impedance reduces sag magnitude at PCC' },
-          { param: 'filterInductance', current: '2.5 mH', recommended: '5 mH', why: 'Improves current waveform quality, reduces peak grid current that causes sag' },
+          { param: 'gridReactance', current: `${params?.gridReactance ?? 0.2} Ω`, recommended: '≤ 0.05 Ω', why: 'Lower grid impedance reduces sag magnitude at PCC' },
+          { param: 'filterInductance', current: `${params?.filterInductance ?? 2.5} mH`, recommended: '5 mH', why: 'Improves current waveform quality, reduces peak grid current that causes sag' },
           { param: 'isGridConnected', current: 'true', recommended: 'Check tie-line capacity', why: 'If grid is weak (high impedance), islanded operation may give better voltage stability' },
         ],
       });
@@ -261,13 +269,13 @@ export default function StatisticsPage() {
         severity: 'info',
         title: 'System Operating Normally',
         subtitle: 'All fault thresholds clear. DC link stable, IGBT within limits, grid voltage nominal.',
-        rootCause: [`Vdc held at ${vdcLast.toFixed(1)}V`, `IGBT peak = ${Math.max(...data.map(d=>d.igbtTemperature||0)).toFixed(1)}°C`, `Grid voltage nominal`],
+        rootCause: [`Vdc held at ${vdcLast.toFixed(1)}V`, `IGBT peak = ${Math.max(...data.map(d=>d.igbtTemperature||0)).toFixed(1)}°C`, isGridDisconnected ? `Grid Disconnected` : `Grid voltage nominal`],
         fixes: [],
       });
     }
 
     return results;
-  }, [data]);
+  }, [data, params]);
 
   // ── KPIs ─────────────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
@@ -278,13 +286,17 @@ export default function StatisticsPage() {
     const solarPk = Math.max(...data.map(d=>d.solarPowerWatts));
     const windPk  = Math.max(...data.map(d=>d.windPowerWatts||0));
     const socLast = data[data.length-1].batterySOC ?? 80;
+    const isBatteryConnected = socLast >= 0;
+    const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
+    const minGridV = Math.max(...data.map(d=>Math.abs(d.gridVoltageA)));
+    
     return [
       { label: 'DC Link (final)', value: vdcLast.toFixed(1), unit: 'V',  status: vdcLast<400?'danger':vdcLast<680?'warn':'ok' as any, sub: `Min: ${vdcMin.toFixed(1)}V` },
       { label: 'IGBT Tj Peak',    value: maxIgbt.toFixed(1), unit: '°C', status: maxIgbt>125?'danger':maxIgbt>100?'warn':'ok' as any, sub: 'Limit: 125°C' },
-      { label: 'Solar Output',    value: (solarPk/1000).toFixed(1), unit: 'kW', status: 'ok' as any, sub: `${data[0].solarIrradiance}W/m²` },
-      { label: 'Wind Output',     value: (windPk/1000).toFixed(1), unit: 'kW', status: windPk>0?'ok':'warn' as any, sub: windPk>0?'Connected':'No wind node' },
-      { label: 'Battery SOC',     value: socLast.toFixed(1), unit: '%', status: socLast<20?'danger':socLast<50?'warn':'ok' as any, sub: 'End of simulation' },
-      { label: 'Grid Status',     value: Math.min(...data.map(d=>Math.abs(d.gridVoltageA)))<150?'SAG':'NOMINAL', unit: '', status: Math.min(...data.map(d=>Math.abs(d.gridVoltageA)))<150?'danger':'ok' as any, sub: 'V_grid peak' },
+      { label: 'Solar Output',    value: (solarPk/1000).toFixed(1), unit: 'kW', status: solarPk>0?'ok':'warn' as any, sub: solarPk>0?`${data[0].solarIrradiance}W/m²`:'Disconnected' },
+      { label: 'Wind Output',     value: (windPk/1000).toFixed(1), unit: 'kW', status: windPk>0?'ok':'warn' as any, sub: windPk>0?'Connected':'Disconnected' },
+      { label: 'Battery SOC',     value: isBatteryConnected ? socLast.toFixed(1) : '--', unit: isBatteryConnected ? '%' : '', status: !isBatteryConnected ? 'warn' : socLast<20?'danger':socLast<50?'warn':'ok' as any, sub: isBatteryConnected ? 'End of simulation' : 'Disconnected' },
+      { label: 'Grid Status',     value: isGridDisconnected ? 'OFF-GRID' : minGridV<150?'SAG':'NOMINAL', unit: '', status: isGridDisconnected ? 'warn' : minGridV<150?'danger':'ok' as any, sub: isGridDisconnected ? 'Disconnected' : 'V_grid peak' },
     ];
   }, [data]);
 

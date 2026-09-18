@@ -6,14 +6,21 @@ export interface SimulationParameters {
   // Solar PV
   solarIrradiance: number;
   solarTemperature?: number;
+  ambientTemperature?: number;       // outdoor air temp for IGBT heatsink (°C)
   solarStringsParallel?: number;
   solarModulesSeries?: number;
   solarPanelWatts?: number;
   solarVmpp?: number;          // MPP voltage per module at STC (V)
+  mpptAlgorithm?: string;      // 'PandO' | 'INC' | 'Fixed'
+  mpptStepSize?: number;       // V — perturbation step size
+  mpptUpdateFreq?: number;     // steps between MPPT perturbations
 
   // Battery
   batterySOC: number;
   batteryCapacityKwh?: number;
+  mpptAlgorithm?: string;
+  mpptStepSize?: number;
+  mpptUpdateFreq?: number;
 
   // DC Link & UPQC
   dcLinkVoltage: number;
@@ -38,6 +45,7 @@ export interface SimulationParameters {
   windCutIn?: number;
   windCutOut?: number;
   windNominalPower?: number;
+  windInertiaTimeConst?: number;  // rotor inertia time constant (s)
 
   // Simulation control
   simulationDuration?: number;
