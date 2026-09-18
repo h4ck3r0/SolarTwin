@@ -5,11 +5,15 @@ Phase 3.3: Uses shared LSTMModel from lstm_model.py.
 Phase 6.3: Extended to report MAPE and per-target uncertainty bounds.
 """
 import os
+import sys
 import numpy as np
 import pandas as pd
 import torch
 import joblib
 from sklearn.metrics import r2_score
+
+# eval_r2.py is in repo root; lstm_model.py is in python_backend/
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_backend'))
 
 from lstm_model import LSTMModel
 from train_lstm import create_sequences_by_scenario

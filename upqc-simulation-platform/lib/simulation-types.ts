@@ -18,9 +18,6 @@ export interface SimulationParameters {
   // Battery
   batterySOC: number;
   batteryCapacityKwh?: number;
-  mpptAlgorithm?: string;
-  mpptStepSize?: number;
-  mpptUpdateFreq?: number;
 
   // DC Link & UPQC
   dcLinkVoltage: number;

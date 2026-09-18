@@ -8,7 +8,12 @@ The Simulink model provides physics-consistent, noise-free ground truth — idea
 pre-training a physics-informed LSTM prior.
 """
 import os
+import sys
 import time
+
+# train_lstm.py lives in the repo root; lstm_model.py is in python_backend/
+_DIR  = os.path.dirname(os.path.abspath(__file__))   # = repo root
+sys.path.insert(0, os.path.join(_DIR, 'python_backend'))
 
 import joblib
 import numpy as np
@@ -21,9 +26,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from lstm_model import LSTMModel
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-_DIR  = os.path.dirname(os.path.abspath(__file__))
-_ROOT = os.path.dirname(_DIR)
-DATA_PATH = os.path.join(_ROOT, "lstm_training_data_25scenarios.csv")
+DATA_PATH = os.path.join(_DIR, "lstm_training_data_25scenarios.csv")
 
 # ── Hyperparameters ────────────────────────────────────────────────────────────
 SEQ_LENGTH    = 10      # Reduced: each scenario ≈ 73 steps
@@ -77,8 +80,8 @@ def main():
     X_scaler.fit(df[all_input_cols].values)
     y_scaler.fit(df[target_cols].values)
 
-    scaler_x_path = os.path.join(_ROOT, 'x_scaler.pkl')
-    scaler_y_path = os.path.join(_ROOT, 'y_scaler.pkl')
+    scaler_x_path = os.path.join(_DIR, 'x_scaler.pkl')
+    scaler_y_path = os.path.join(_DIR, 'y_scaler.pkl')
     joblib.dump(X_scaler, scaler_x_path)
     joblib.dump(y_scaler, scaler_y_path)
     print(f"Scalers saved → {scaler_x_path}, {scaler_y_path}")
@@ -143,7 +146,7 @@ def main():
     best_val_loss = float('inf')
     patience_counter = 0
     start_time = time.time()
-    model_path = os.path.join(_ROOT, 'lstm_best_model.pth')
+    model_path = os.path.join(_DIR, 'lstm_best_model.pth')
 
     for epoch in range(EPOCHS):
         model.train()

@@ -322,17 +322,20 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
         ig_b = ilb + i_inj[1, k] - ig_pk * np.sin(th + pB)
         ig_c = ilc + i_inj[2, k] - ig_pk * np.sin(th + pC)
 
-        # FIX: Thevenin RL drop — resistive + inductive (x_grid now actually used)
-        # Guard: skip inductive term on k=0 (ig_prev=0 would give infinite derivative)
-        if k > 0:
+        # FIX PHYSICS: Thevenin RL drop
+        # x_grid is REACTANCE (X = ωL) in Ohms, not inductance.
+        # Time-domain inductive drop = L·di/dt = (X/ω)·di/dt
+        L_grid = x_grid / omega   # convert reactance → inductance (H)
+        # Skip derivative for first 2 steps to avoid init transient spikes
+        if k > 1:
             dig_a = (ig_a - ig_prev[0]) / dt
             dig_b = (ig_b - ig_prev[1]) / dt
             dig_c = (ig_c - ig_prev[2]) / dt
         else:
             dig_a = dig_b = dig_c = 0.0
-        vg_a = vs_a - r_grid * ig_a - x_grid * dig_a
-        vg_b = vs_b - r_grid * ig_b - x_grid * dig_b
-        vg_c = vs_c - r_grid * ig_c - x_grid * dig_c
+        vg_a = vs_a - r_grid * ig_a - L_grid * dig_a
+        vg_b = vs_b - r_grid * ig_b - L_grid * dig_b
+        vg_c = vs_c - r_grid * ig_c - L_grid * dig_c
         ig_prev[:] = [ig_a, ig_b, ig_c]
 
         v_grid[0, k] = vg_a
@@ -434,7 +437,7 @@ def run_simulation(req: SimulationRequest):
     # Create one MPPT tracker per panel (P&O algorithm)
     use_mppt = params.mpptAlgorithm.strip().upper() not in ("FIXED", "")
     mppt_trackers = [
-        MPPTState(p['vmpp'], step=params.mpptStepSize, freq=params.mpptUpdateFreq)
+        MPPTState(p['vmpp'] * p['modules'], step=params.mpptStepSize, freq=params.mpptUpdateFreq)
         for p in solar_panels
     ]
 

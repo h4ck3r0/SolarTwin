@@ -10,7 +10,8 @@ import {
   LineChart, 
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lightbulb
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -21,6 +22,7 @@ export default function Sidebar() {
     { name: "Workspace", href: "/", icon: LayoutDashboard },
     { name: "Live Matrix", href: "/live", icon: Activity },
     { name: "Statistics", href: "/statistics", icon: LineChart },
+    { name: "Logic Breakdown", href: "/insights", icon: Lightbulb },
   ];
 
   return (
