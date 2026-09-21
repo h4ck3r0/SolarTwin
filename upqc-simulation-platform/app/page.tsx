@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import SimulationToolbar from '@/components/SimulationToolbar';
 import NodeParameterModal from '@/components/NodeParameterModal';
@@ -9,6 +8,8 @@ import ModelExplorer from '@/components/ModelExplorer';
 import SimulationCanvas from '@/components/SimulationCanvas';
 import ParameterPanel from '@/components/ParameterPanel';
 import SolarPVTelemetryCard from '@/components/SolarPVTelemetryCard';
+import Link from 'next/link';
+import { CheckCircle2, X } from 'lucide-react';
 import { SimulationParameters, SimulationDataPoint, SimulationStatus } from '@/lib/simulation-types';
 
 const DEFAULT_PARAMETERS: SimulationParameters = {
@@ -40,7 +41,6 @@ const DEFAULT_PARAMETERS: SimulationParameters = {
 };
 
 export default function WorkspacePage() {
-  const router = useRouter();
   const [status, setStatus] = useState<SimulationStatus>('IDLE');
   const [simulationTime, setSimulationTime] = useState<number>(0);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -49,6 +49,7 @@ export default function WorkspacePage() {
   const [results, setResults] = useState<SimulationDataPoint[]>([]);
   const [resultsCollapsed, setResultsCollapsed] = useState<boolean>(false);
   const [editingNode, setEditingNode] = useState<{id: string, type: string, label: string} | null>(null);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   // Reactive connected node IDs — updated whenever canvas edges change
   const [connectedNodeIds, setConnectedNodeIds] = useState<Set<string>>(new Set());
 
@@ -122,9 +123,10 @@ export default function WorkspacePage() {
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         setSimulationTime(finalSimTime);
         
-        // Save to localStorage and redirect
+        // Save to localStorage for statistics page
         localStorage.setItem('simulation_results', JSON.stringify(result.dataPoints));
-        router.push('/statistics');
+        // FIX BUG-F01: Show success banner instead of auto-redirecting
+        setShowSuccessBanner(true);
         
       } else {
         throw new Error(result.message || 'Simulation execution failed.');
@@ -167,12 +169,36 @@ export default function WorkspacePage() {
     window.location.reload();
   };
 
+  // FIX BUG-F02: stable callback reference prevents stale closure in SimulationCanvas
+  const handleTopologyChange = useCallback((ids: Set<string>) => {
+    setConnectedNodeIds((prev) => {
+      if (prev.size !== ids.size) return new Set(ids);
+      for (const id of ids) {
+        if (!prev.has(id)) return new Set(ids);
+      }
+      return prev;
+    });
+  }, []);
+
   const handleSelectNodeFromExplorer = (nodeId: string) => {
     setSelectedNodeId(nodeId);
   };
 
   return (
     <div className="h-full w-full flex flex-col bg-[#F8FAFC] text-slate-900 overflow-hidden font-mono select-none">
+      {/* FIX BUG-F01: Success toast banner */}
+      {showSuccessBanner && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-emerald-900 border border-emerald-500/50 text-emerald-100 px-5 py-3 rounded-xl shadow-2xl shadow-emerald-900/50 animate-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+          <span className="font-bold text-sm">Simulation Complete!</span>
+          <Link href="/statistics" className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded-lg text-xs font-bold transition-colors">
+            View Stats →
+          </Link>
+          <button onClick={() => setShowSuccessBanner(false)} className="text-emerald-400 hover:text-white ml-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {/* Top Navigation Toolbar */}
       <SimulationToolbar
         status={status}
@@ -220,15 +246,7 @@ export default function WorkspacePage() {
             getTopologyRef={getTopologyRef}
             setUpdateNodeRef={updateNodeRef}
             onNodeDoubleClick={(e, node) => setEditingNode({ id: node.id, type: node.type, label: node.data?.label || '' })}
-            onTopologyChange={(ids) => {
-              setConnectedNodeIds((prev) => {
-                if (prev.size !== ids.size) return new Set(ids);
-                for (const id of ids) {
-                  if (!prev.has(id)) return new Set(ids);
-                }
-                return prev; // No change, return exact same Set reference to avoid re-render
-              });
-            }}
+            onTopologyChange={handleTopologyChange}
           />
         </ReactFlowProvider>
 

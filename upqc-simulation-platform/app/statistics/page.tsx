@@ -177,9 +177,10 @@ export default function StatisticsPage() {
     const isDcDrain = !isDcCrash && vdcDrop > 5;
 
     const solarPeak = Math.max(...data.map(d => d.solarPowerWatts));
-    const loadKw    = 15; // default — could pull from data in future
-    const rGrid     = 0.1;
-    const vBase     = (415 / Math.sqrt(3)) * Math.sqrt(2);
+    // FIX BUG-B06: use actual loadActivePower from params instead of hardcoded 15
+    const loadKw    = params?.loadActivePower ?? 15;
+    const rGrid     = params?.gridResistance ?? 0.1;
+    const vBase     = ((params?.microgridVoltage ?? 415) / Math.sqrt(3)) * Math.sqrt(2);
     const iGridEst  = solarPeak / (1.5 * vBase);
     const pDrainEst = rGrid * iGridEst * iGridEst;
 
@@ -197,10 +198,10 @@ export default function StatisticsPage() {
           `Capacitor discharges: ΔV = ΔQ/C = P_drain × Δt / (C × Vdc) — cannot recover without sufficient battery capacity`,
         ],
         fixes: [
-          { param: 'batteryCapacityKwh', current: '100 kWh', recommended: '≥ 500 kWh', why: 'Larger battery gives PI controller enough headroom to inject >200kW during transient' },
+          { param: 'batteryCapacityKwh', current: `${params?.batteryCapacityKwh ?? 100} kWh`, recommended: '≥ 500 kWh', why: 'Larger battery gives PI controller enough headroom to inject >200kW during transient' },
           { param: 'gridResistance', current: `${rGrid} Ω`, recommended: '≤ 0.01 Ω', why: `V_inj = R × I_grid. Lower R → smaller voltage injection → less DC power consumed per cycle` },
-          { param: 'dcCapacitance', current: '2200 μF', recommended: '≥ 50000 μF', why: 'Larger capacitor slows ΔV/Δt rate. Gives PI controller more time to respond before voltage falls below threshold' },
-          { param: 'solarStringsParallel', current: '88', recommended: '≤ 10', why: `Reducing solar power reduces I_grid export, which reduces V_inj and P_drain proportionally (P ∝ I²)` },
+          { param: 'dcCapacitance', current: `${params?.dcCapacitance ?? 2200} μF`, recommended: '≥ 50000 μF', why: 'Larger capacitor slows ΔV/Δt rate. Gives PI controller more time to respond before voltage falls below threshold' },
+          { param: 'solarStringsParallel', current: `${params?.solarStringsParallel ?? 88}`, recommended: '≤ 10', why: `Reducing solar power reduces I_grid export, which reduces V_inj and P_drain proportionally (P ∝ I²)` },
         ],
       });
     } else if (isDcDrain) {
@@ -215,8 +216,8 @@ export default function StatisticsPage() {
           `Steady-state droop = P_drain / (kp_dc × C_dc) — PI gain too low to eliminate error`,
         ],
         fixes: [
-          { param: 'kp (PI gain)', current: '0.5', recommended: '5.0 – 10.0', why: 'Higher Kp forces PI controller to drive Vdc error to zero faster, eliminating steady-state droop' },
-          { param: 'ki (PI integral)', current: '10', recommended: '50 – 100', why: 'Higher Ki eliminates steady-state error. Integral term accumulates until Vdc = 700V exactly' },
+          { param: 'kp (PI gain)', current: `${params?.kp ?? 0.5}`, recommended: '5.0 – 10.0', why: 'Higher Kp forces PI controller to drive Vdc error to zero faster, eliminating steady-state droop' },
+          { param: 'ki (PI integral)', current: `${params?.ki ?? 10}`, recommended: '50 – 100', why: 'Higher Ki eliminates steady-state error. Integral term accumulates until Vdc = 700V exactly' },
           { param: 'gridResistance', current: `${rGrid} Ω`, recommended: '≤ 0.05 Ω', why: 'Lower grid impedance reduces power consumed by series compensator' },
         ],
       });
@@ -258,7 +259,7 @@ export default function StatisticsPage() {
         fixes: [
           { param: 'gridReactance', current: `${params?.gridReactance ?? 0.2} Ω`, recommended: '≤ 0.05 Ω', why: 'Lower grid impedance reduces sag magnitude at PCC' },
           { param: 'filterInductance', current: `${params?.filterInductance ?? 2.5} mH`, recommended: '5 mH', why: 'Improves current waveform quality, reduces peak grid current that causes sag' },
-          { param: 'isGridConnected', current: 'true', recommended: 'Check tie-line capacity', why: 'If grid is weak (high impedance), islanded operation may give better voltage stability' },
+          { param: 'isGridConnected', current: `${params?.isGridConnected ?? true}`, recommended: 'Check tie-line capacity', why: 'If grid is weak (high impedance), islanded operation may give better voltage stability' },
         ],
       });
     }
@@ -285,8 +286,9 @@ export default function StatisticsPage() {
     const maxIgbt = Math.max(...data.map(d=>d.igbtTemperature||0));
     const solarPk = Math.max(...data.map(d=>d.solarPowerWatts));
     const windPk  = Math.max(...data.map(d=>d.windPowerWatts||0));
-    const socLast = data[data.length-1].batterySOC ?? 80;
-    const isBatteryConnected = socLast >= 0;
+    const socLast = data[data.length-1].batterySOC;
+    // FIX BUG-F03: batterySOC is now Optional (null = disconnected), not -1.0 sentinel
+    const isBatteryConnected = socLast != null && socLast >= 0;
     const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
     const minGridV = Math.max(...data.map(d=>Math.abs(d.gridVoltageA)));
     
@@ -295,7 +297,7 @@ export default function StatisticsPage() {
       { label: 'IGBT Tj Peak',    value: maxIgbt.toFixed(1), unit: '°C', status: maxIgbt>125?'danger':maxIgbt>100?'warn':'ok' as any, sub: 'Limit: 125°C' },
       { label: 'Solar Output',    value: (solarPk/1000).toFixed(1), unit: 'kW', status: solarPk>0?'ok':'warn' as any, sub: solarPk>0?`${data[0].solarIrradiance}W/m²`:'Disconnected' },
       { label: 'Wind Output',     value: (windPk/1000).toFixed(1), unit: 'kW', status: windPk>0?'ok':'warn' as any, sub: windPk>0?'Connected':'Disconnected' },
-      { label: 'Battery SOC',     value: isBatteryConnected ? socLast.toFixed(1) : '--', unit: isBatteryConnected ? '%' : '', status: !isBatteryConnected ? 'warn' : socLast<20?'danger':socLast<50?'warn':'ok' as any, sub: isBatteryConnected ? 'End of simulation' : 'Disconnected' },
+      { label: 'Battery SOC',     value: isBatteryConnected ? (socLast as number).toFixed(1) : '--', unit: isBatteryConnected ? '%' : '', status: !isBatteryConnected ? 'warn' : (socLast as number)<20?'danger':(socLast as number)<50?'warn':'ok' as any, sub: isBatteryConnected ? 'End of simulation' : 'Disconnected' },
       { label: 'Grid Status',     value: isGridDisconnected ? 'OFF-GRID' : minGridV<150?'SAG':'NOMINAL', unit: '', status: isGridDisconnected ? 'warn' : minGridV<150?'danger':'ok' as any, sub: isGridDisconnected ? 'Disconnected' : 'V_grid peak' },
     ];
   }, [data]);
@@ -497,7 +499,7 @@ export default function StatisticsPage() {
                     <td className="p-3 font-bold text-amber-600">{dp.solarPowerWatts.toFixed(0)}</td>
                     <td className={`p-3 font-bold ${(dp.igbtTemperature||0)>125?'text-rose-600':'text-red-500'}`}>{dp.igbtTemperature?.toFixed(1) || '25.0'}</td>
                     <td className="p-3 font-bold text-cyan-600">{(dp.windPowerWatts||0).toFixed(0)}</td>
-                    <td className="p-3 font-bold text-emerald-600">{(dp.batterySOC||0).toFixed(2)}</td>
+                    <td className="p-3 font-bold text-emerald-600">{dp.batterySOC != null ? dp.batterySOC.toFixed(2) : '--'}</td>
                   </tr>
                 );
               })}

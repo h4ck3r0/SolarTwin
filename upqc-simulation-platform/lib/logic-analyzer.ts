@@ -60,7 +60,8 @@ export function analyzeLogic(
   const avgSolarW = tail.reduce((sum, dp) => sum + dp.solarPowerWatts, 0) / tailLength;
   const avgSolarKw = avgSolarW / 1000;
   
-  const finalSoc = tail[tailLength - 1].batterySOC ?? -1;
+  // FIX BUG-F04: batterySOC is now Optional — null means disconnected
+  const finalSoc = tail[tailLength - 1].batterySOC ?? null;
 
   // Grid RMS voltage (Phase A)
   const gridVoltsA = tail.map(dp => dp.gridVoltageA);
@@ -98,7 +99,7 @@ export function analyzeLogic(
   // Evaluate Battery State
   let batteryState: 'Charging' | 'Discharging' | 'Idle' | 'Disconnected' = 'Disconnected';
   let batteryDesc = 'Battery is disconnected.';
-  if (finalSoc >= 0) {
+  if (finalSoc != null && finalSoc >= 0) {
     // Determine charging/discharging based on net power and SOC limits
     if (netKw > 0.5 && finalSoc < 100) {
       batteryState = 'Charging';
@@ -117,7 +118,8 @@ export function analyzeLogic(
   let gridDesc = 'Main grid is disconnected (Islanded mode).';
   let gridPowerKw = 0;
   
-  if (params.isGridConnected !== false) {
+  // FIX BUG-F04: Use `?? true` so old localStorage params (missing this key) default to grid-connected
+  if ((params.isGridConnected ?? true) !== false) {
     // If battery absorbs all excess, grid might be balanced. Otherwise, grid takes the rest.
     if (netKw > 1.0) {
        gridState = 'Absorbing Excess';
@@ -159,7 +161,7 @@ export function analyzeLogic(
   return {
     solar: { state: solarState, powerKw: avgSolarKw, description: solarDesc },
     grid: { state: gridState, powerKw: gridPowerKw, description: gridDesc },
-    battery: { state: batteryState, soc: finalSoc, description: batteryDesc },
+    battery: { state: batteryState, soc: finalSoc ?? 0, description: batteryDesc },
     upqcSeries: { state: upqcSeriesState, description: seriesDesc },
     upqcShunt: { state: upqcShuntState, description: shuntDesc },
     load: { powerKw: loadKw, description: `Load requires ${loadKw.toFixed(1)} kW of power.` }

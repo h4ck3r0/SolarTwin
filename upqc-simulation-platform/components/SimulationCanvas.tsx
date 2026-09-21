@@ -155,7 +155,7 @@ export default function SimulationCanvas({
       const ids = new Set(edges.flatMap((e: any) => [e.source, e.target]));
       onTopologyChange(ids, edges);
     }
-  }, [edges, nodes]); // Omit onTopologyChange to avoid infinite loop from parent re-renders
+  }, [edges, nodes, onTopologyChange]); // FIX BUG-F02: onTopologyChange is stable (useCallback in parent)
 
   // Save topology to localStorage on any change so it persists when returning from dashboard
   useEffect(() => {
@@ -219,7 +219,8 @@ export default function SimulationCanvas({
 
       const newNode = {
         id: `node_${new Date().getTime()}`,
-        type,
+        // FIX BUG-F05: Default to 'electrical' if type is not in registered nodeTypes
+        type: ['electrical', 'control', 'microgrid', 'scope'].includes(type) ? type : 'electrical',
         position,
         data: { label, type, details: 'Dynamically added component' },
       };

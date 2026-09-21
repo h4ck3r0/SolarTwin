@@ -385,9 +385,10 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
         bsoc_arr[k] = battery_soc
 
         # DC-link PI keeps bus voltage — uses UPQC consumption and battery feedforward
+        # Gains are scaled: kp in 0..100 range → physical scale ×2000 gives ~MW-class response
         err = dc_ref - v_dc
         v_dc_int += err * dt
-        p_dc_regulation = (kp * 200.0) * err + (ki * 5.0) * v_dc_int
+        p_dc_regulation = (kp * 2000.0) * err + (ki * 50.0) * v_dc_int
 
         # FIX BUG-13: RK4 v_dc integration — regularized denominator, no hard skip
         p_net = p_dc_regulation - p_upqc
@@ -559,12 +560,20 @@ def run_simulation(req: SimulationRequest):
             total_battery_kwh += cap
             soc_capacity_pairs.append((soc, cap))
 
-    # FIX BUG-02: capacity-weighted average SOC across all BESS nodes
+    # FIX BUG-B04 (revised): Three cases:
+    # 1. Battery nodes found in topology → use capacity-weighted SOC
+    # 2. No battery nodes in topology AND battery params are set → use global params (battery in circuit but not a canvas node)
+    # 3. No battery nodes AND capacity = 0 → truly disconnected → return None
     if soc_capacity_pairs and total_battery_kwh > 0:
         effective_battery_soc = sum(s * c for s, c in soc_capacity_pairs) / total_battery_kwh
     elif not soc_capacity_pairs:
-        # FIX BUG-B04: use None (not -1.0) as sentinel for disconnected battery
-        effective_battery_soc = None  # signal to frontend: battery disconnected
+        if params.batteryCapacityKwh > 0:
+            # No battery node in topology, but global params define one → use global params
+            effective_battery_soc = float(params.batterySOC)
+            total_battery_kwh = float(params.batteryCapacityKwh)
+        else:
+            # Explicitly no battery → None signals disconnect to frontend
+            effective_battery_soc = None
 
     # ── Detect grid connection from topology ─────────────────────────────────
     # FIX BUG-B03: fallback to params.isGridConnected if no grid node found in topology
