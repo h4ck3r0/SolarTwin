@@ -63,35 +63,35 @@ export default function InsightsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-950 p-6 selection:bg-emerald-500/30">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-              <ArrowLeft className="w-5 h-5 text-slate-600" />
+        <div className="flex items-center justify-between pb-6 border-b border-slate-800/50">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] group">
+              <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 transition-colors" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400 tracking-tight flex items-center gap-3">
                 System Logic Insights
               </h1>
-              <p className="text-sm text-slate-500 mt-1">Plain-English breakdown of the electrical power flow.</p>
+              <p className="text-sm text-slate-400 mt-2 font-medium tracking-wide">Plain-English breakdown of the electrical power flow and AI decisions.</p>
             </div>
           </div>
         </div>
 
         {/* State Breakdown Cards */}
-        <div className="mt-8">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-amber-500" />
-            Current States
+        <div className="mt-8 relative z-10">
+          <h2 className="text-xl font-bold text-slate-200 mb-6 flex items-center gap-3 tracking-wide">
+            <Lightbulb className="w-6 h-6 text-emerald-400" />
+            Current AI Diagnostics
           </h2>
           <PlainEnglishCards logic={logic} />
         </div>
 
         {/* Decision Flow Timeline */}
-        <div className="mt-8">
+        <div className="mt-12 mb-12">
            <LogicFlowTimeline logic={logic} />
         </div>
         
