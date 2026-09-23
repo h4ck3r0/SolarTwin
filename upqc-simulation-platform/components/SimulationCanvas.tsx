@@ -13,11 +13,12 @@ import ReactFlow, {
   Connection,
   Edge,
   addEdge,
+  updateEdge,
   Handle
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { initialNodes, initialEdges, ElectricalNodeData } from '@/lib/model-definition';
-import { Cpu, Eye, Radio, Sun, Zap } from 'lucide-react';
+import { Cpu, Eye, Radio, Sun, Zap, AlertTriangle, X } from 'lucide-react';
 
 const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeData>) => {
   const getNodeStyling = () => {
@@ -48,9 +49,7 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
     return <Cpu className="w-5 h-5" />;
   };
 
-  // Show dimmed/dashed border if node is marked inactive (disconnected) or explicitly tripped
-  const isTripped = String(data.parameters?.isTripped) === 'true';
-  const isDisconnected = data.active === false || isTripped;
+  const isDisconnected = data.active === false;
 
   return (
     <div className={`p-2 rounded border-2 shadow-lg transition-all font-mono select-none min-w-[140px]
@@ -58,17 +57,17 @@ const CustomElectricalNode = ({ id, data, selected }: NodeProps<ElectricalNodeDa
       ${selected ? 'ring-2 ring-cyan-400 scale-105' : ''}`}>
       
       {/* Left */}
-      <Handle type="target" position={Position.Left} id="l-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
-      <Handle type="source" position={Position.Left} id="l-s" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
+      <Handle type="target" position={Position.Left} id="l-t" style={{ background: '#94a3b8', border: '2px solid #cbd5e1', width: '12px', height: '12px', borderRadius: '50%' }} />
+      <Handle type="source" position={Position.Left} id="l-s" style={{ background: '#00f0ff', border: '2px solid #0ea5e9', width: '10px', height: '10px', borderRadius: '50%' }} />
       {/* Right */}
-      <Handle type="target" position={Position.Right} id="r-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
-      <Handle type="source" position={Position.Right} id="r-s" style={{ background: '#00f0ff', width: '8px', height: '8px', borderRadius: '50%' }} />
+      <Handle type="target" position={Position.Right} id="r-t" style={{ background: '#94a3b8', border: '2px solid #cbd5e1', width: '12px', height: '12px', borderRadius: '50%' }} />
+      <Handle type="source" position={Position.Right} id="r-s" style={{ background: '#00f0ff', border: '2px solid #0ea5e9', width: '10px', height: '10px', borderRadius: '50%' }} />
       {/* Top */}
-      <Handle type="target" position={Position.Top} id="t-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
-      <Handle type="source" position={Position.Top} id="t-s" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
+      <Handle type="target" position={Position.Top} id="t-t" style={{ background: '#94a3b8', border: '2px solid #cbd5e1', width: '12px', height: '12px', borderRadius: '50%' }} />
+      <Handle type="source" position={Position.Top} id="t-s" style={{ background: '#f59e0b', border: '2px solid #d97706', width: '10px', height: '10px', borderRadius: '50%' }} />
       {/* Bottom */}
-      <Handle type="target" position={Position.Bottom} id="b-t" style={{ background: 'transparent', border: 'none', width: '1px', height: '1px' }} />
-      <Handle type="source" position={Position.Bottom} id="b-s" style={{ background: '#f59e0b', width: '8px', height: '8px', borderRadius: '50%' }} />
+      <Handle type="target" position={Position.Bottom} id="b-t" style={{ background: '#94a3b8', border: '2px solid #cbd5e1', width: '12px', height: '12px', borderRadius: '50%' }} />
+      <Handle type="source" position={Position.Bottom} id="b-s" style={{ background: '#f59e0b', border: '2px solid #d97706', width: '10px', height: '10px', borderRadius: '50%' }} />
 
 
       <div className="flex items-center space-x-2">
@@ -125,15 +124,35 @@ export default function SimulationCanvas({
   const { zoomIn, zoomOut, fitView, screenToFlowPosition } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
+  // Tracks whether an edge drag-reconnect landed on a valid handle
+  const edgeUpdateSuccessful = useRef(false);
+  // Toast warning state
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(msg);
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+  }, []);
   
   // Hydration-safe load from localStorage
+  // After restoring, recompute battery/wind active flags from the restored edges
+  // so a stale saved `active: false` never conflicts with an existing wire.
   useEffect(() => {
     const saved = localStorage.getItem('solar_twin_topology');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.nodes && parsed.nodes.length > 0) setNodes(parsed.nodes);
-        if (parsed.edges) setEdges(parsed.edges);
+        const restoredEdges: Edge[] = parsed.edges ?? [];
+        const connectedSet = new Set(restoredEdges.flatMap((e: any) => [e.source, e.target]));
+        const OPTIONAL = ['battery', 'wind'];
+        const fixedNodes = (parsed.nodes ?? []).map((n: any) => {
+          if (!OPTIONAL.some(kw => n.id.includes(kw))) return n;
+          return { ...n, data: { ...n.data, active: connectedSet.has(n.id) } };
+        });
+        if (fixedNodes.length > 0) setNodes(fixedNodes);
+        setEdges(restoredEdges);
       } catch(e) {}
     }
     setLoaded(true);
@@ -149,23 +168,20 @@ export default function SimulationCanvas({
     };
   }, [zoomIn, zoomOut, fitView, setZoomInRef, setZoomOutRef, setFitViewRef, getTopologyRef, setUpdateNodeRef, nodes, edges, setNodes]);
 
-  // Notify parent of topology changes when edges or nodes change
   useEffect(() => {
     if (onTopologyChange) {
       const ids = new Set(edges.flatMap((e: any) => [e.source, e.target]));
       onTopologyChange(ids, edges);
     }
-  }, [edges, nodes]); // Omit onTopologyChange to avoid infinite loop from parent re-renders
+  }, [edges, nodes, onTopologyChange]); // FIX BUG-F02: onTopologyChange is stable (useCallback in parent)
 
-  // Save topology to localStorage on any change so it persists when returning from dashboard
   useEffect(() => {
     if (loaded) {
       localStorage.setItem('solar_twin_topology', JSON.stringify({ nodes, edges }));
     }
   }, [nodes, edges, loaded]);
 
-  // Separate effect: update battery/wind node active flags when edges change ONLY
-  // (kept separate from the main effect to avoid the nodes→setNodes infinite loop)
+ 
   useEffect(() => {
     const OPTIONAL = ['battery', 'wind'];
     const connectedSet = new Set(edges.flatMap((e: any) => [e.source, e.target]));
@@ -187,14 +203,92 @@ export default function SimulationCanvas({
     [setEdges]
   );
 
+  // ── Power-source guard ────────────────────────────────────────────────────
+  // Returns true if removing `edgeId` would leave the system with NO power source.
+  // Power sources: grid-source (AC mains) OR battery-storage (DC bus backup).
+  const wouldLosePower = useCallback(
+    (edgeId: string, currentEdges: Edge[]): boolean => {
+      const remaining = currentEdges.filter(e => e.id !== edgeId);
+      const connected = new Set(remaining.flatMap(e => [e.source, e.target]));
+      const gridConnected = connected.has('grid-source');
+      const batteryConnected = connected.has('battery-storage');
+      return !gridConnected && !batteryConnected;
+    },
+    []
+  );
+
+  // Safe edge removal: checks guard first, shows toast if blocked
+  const tryRemoveEdge = useCallback(
+    (edgeId: string) => {
+      setEdges((currentEdges) => {
+        if (wouldLosePower(edgeId, currentEdges)) {
+          showToast('⚠️ Cannot disconnect — at least one power source (Grid or Battery BESS) must remain connected to the DC Link.');
+          return currentEdges; // block removal
+        }
+        return currentEdges.filter(e => e.id !== edgeId);
+      });
+    },
+    [setEdges, wouldLosePower, showToast]
+  );
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Double-click an edge to disconnect (remove it from topology)
   const onEdgeDoubleClick = useCallback(
     (_event: React.MouseEvent, edge: Edge) => {
-      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+      tryRemoveEdge(edge.id);
+    },
+    [tryRemoveEdge]
+  );
+
+  // ── Drag-to-reconnect edge API (ReactFlow v11) ──────────────────────────────
+  // Called when user starts dragging an edge endpoint
+  const onEdgeUpdateStart = useCallback(() => {
+    edgeUpdateSuccessful.current = false;
+  }, []);
+
+  // Called when drag lands on a valid target handle → reconnect the edge
+  const onEdgeUpdate = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      edgeUpdateSuccessful.current = true;
+      setEdges((eds) => updateEdge(oldEdge, newConnection, eds));
     },
     [setEdges]
   );
 
+  // Called when drag finishes — if it didn't land on a valid handle, delete the edge (guarded)
+  const onEdgeUpdateEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, edge: Edge) => {
+      if (!edgeUpdateSuccessful.current) {
+        tryRemoveEdge(edge.id);
+      }
+      edgeUpdateSuccessful.current = false;
+    },
+    [tryRemoveEdge]
+  );
+  // ────────────────────────────────────────────────────────────────────────────
+
+
+  // Guarded onEdgesChange: intercepts 'remove' changes (Delete/Backspace key)
+  // and checks the power-source guard before allowing the removal.
+  const guardedOnEdgesChange = useCallback(
+    (changes: any[]) => {
+      const removeChanges = changes.filter((c: any) => c.type === 'remove');
+      const otherChanges  = changes.filter((c: any) => c.type !== 'remove');
+
+      if (otherChanges.length > 0) onEdgesChange(otherChanges);
+
+      for (const change of removeChanges) {
+        setEdges((currentEdges) => {
+          if (wouldLosePower(change.id, currentEdges)) {
+            showToast('⚠️ Cannot disconnect — at least one power source (Grid or Battery BESS) must remain connected.');
+            return currentEdges;
+          }
+          return currentEdges.filter(e => e.id !== change.id);
+        });
+      }
+    },
+    [onEdgesChange, setEdges, wouldLosePower, showToast]
+  );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -219,7 +313,8 @@ export default function SimulationCanvas({
 
       const newNode = {
         id: `node_${new Date().getTime()}`,
-        type,
+        // FIX BUG-F05: Default to 'electrical' if type is not in registered nodeTypes
+        type: ['electrical', 'control', 'microgrid', 'scope'].includes(type) ? type : 'electrical',
         position,
         data: { label, type, details: 'Dynamically added component' },
       };
@@ -236,13 +331,16 @@ export default function SimulationCanvas({
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onEdgesChange={guardedOnEdgesChange}
         onConnect={onConnect}
         onNodeClick={(event, node) => onSelectNode(node.id)}
         onNodeDoubleClick={onNodeDoubleClick}
         onEdgeDoubleClick={onEdgeDoubleClick}
         onPaneClick={() => onSelectNode(null)}
-        deleteKeyCode="Delete"
+        onEdgeUpdateStart={onEdgeUpdateStart}
+        onEdgeUpdate={onEdgeUpdate}
+        onEdgeUpdateEnd={onEdgeUpdateEnd}
+        deleteKeyCode={['Delete', 'Backspace']}
         multiSelectionKeyCode="Shift"
         edgesUpdatable={true}
         nodeTypes={nodeTypes}
@@ -280,13 +378,24 @@ export default function SimulationCanvas({
                   <span className={hasWind ? 'text-cyan-600 font-bold' : 'text-slate-400'}>{hasWind ? '∥ AC Bus' : 'not connected'}</span>
                 </div>
                 <div className="mt-1 border-t border-slate-100 pt-1 text-[8px] text-slate-400">
-                  Double-click a wire to disconnect
+                  Double-click wire to delete • Drag endpoint to reconnect • Select + Delete/Backspace to remove
                 </div>
               </>
             );
           })()}
         </Panel>
       </ReactFlow>
+
+      {/* Power-source warning toast */}
+      {toast && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 bg-rose-950 border border-rose-500/60 text-rose-100 px-5 py-3.5 rounded-xl shadow-2xl max-w-sm">
+          <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+          <span className="text-xs font-semibold leading-snug">{toast}</span>
+          <button onClick={() => setToast(null)} className="text-rose-400 hover:text-white ml-1 flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

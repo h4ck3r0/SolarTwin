@@ -28,7 +28,7 @@ _executor = ThreadPoolExecutor(max_workers=4)
 @app.post("/simulate")
 async def simulate(req: SimulationRequest):
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         # run_simulation is pure-CPU NumPy — offload to thread pool
         data_points = await loop.run_in_executor(_executor, run_simulation, req)
         return {

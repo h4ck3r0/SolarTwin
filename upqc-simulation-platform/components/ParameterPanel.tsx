@@ -79,18 +79,19 @@ export default function ParameterPanel({
       const weatherData = await weatherRes.json();
       
       if (weatherData.current) {
-        const temp = weatherData.current.temperature_2m;
+        const temp  = weatherData.current.temperature_2m;
         const irrad = weatherData.current.shortwave_radiation;
-        const wind = weatherData.current.wind_speed_10m;
-        
+        const wind  = weatherData.current.wind_speed_10m;
+
+        // Write into the profile strings so the solver picks them up
         setLocalParams((prev: any) => ({
           ...prev,
-          solarTemperature: temp,
-          solarIrradiance: irrad,
-          windSpeed: wind
+          irradianceProfile: `0:${irrad}`,
+          temperatureProfile: `0:${temp}`,
+          windSpeed: wind,
         }));
-        
-        alert(`Successfully fetched live data for ${name}, ${country}:\nIrradiance: ${irrad} W/m²\nTemperature: ${temp} °C\nWind Speed: ${wind} m/s`);
+
+        alert(`✅ Live data synced for ${name}, ${country}:\nIrradiance: ${irrad} W/m²  →  Engine profile set to "0:${irrad}"\nTemperature: ${temp} °C  →  Engine profile set to "0:${temp}"\nWind Speed: ${wind} m/s`);
       }
     } catch (err) {
       alert("Error fetching live weather: " + err);
@@ -182,6 +183,7 @@ export default function ParameterPanel({
           {renderInput('Duration', 'simulationDuration', 's', 0.1, 0.1, 10)}
           {renderStringInput('Irradiance Profile (t:W/m²)', 'irradianceProfile')}
           {renderStringInput('Temperature Profile (t:°C)', 'temperatureProfile')}
+          <p className="text-[8px] text-indigo-400 leading-tight">Profile format: <span className="font-mono">time:value, time:value</span>. Controls irradiance &amp; temp fed to the solver — edit only here.</p>
         </div>
 
         {/* ── AC Microgrid ─ show if grid node connected ────── */}
@@ -216,8 +218,7 @@ export default function ParameterPanel({
               className="w-full flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 py-1.5 rounded border border-amber-200 text-[9px] font-bold uppercase tracking-wide transition-colors">
               <CloudLightning className="w-3 h-3" /> Sync Live Weather
             </button>
-            {renderInput('Irradiance', 'solarIrradiance', 'W/m²', 50, 0, 1500)}
-            {renderInput('Panel Temp', 'solarTemperature', '°C', 1, -20, 100)}
+            <p className="text-[8px] text-amber-500 leading-tight">Sync updates the Engine profiles above. Irradiance &amp; temp are set once in Engine.</p>
             {renderInput('Parallel Strings', 'solarStringsParallel', 'strings', 1, 1, 500)}
             {renderInput('Series Modules', 'solarModulesSeries', 'units', 1, 1, 50)}
             {renderInput('Panel Watt-Peak', 'solarPanelWatts', 'Wp', 5, 50, 1000)}
@@ -231,13 +232,16 @@ export default function ParameterPanel({
             <h3 className="text-[9px] font-black text-sky-700 uppercase tracking-widest border-b border-sky-100 pb-1">
               Battery BESS {!nothingConnected && hasBattery && <span className="text-[8px] font-normal text-sky-500 ml-1">⚡ ∥ DC Bus</span>}
             </h3>
-            {!hasBattery && !nothingConnected && (
+            {hasBattery || nothingConnected ? (
+              <>
+                {renderInput('Initial SOC', 'batterySOC', '%', 1, 0, 100)}
+                {renderInput('Capacity', 'batteryCapacityKwh', 'kWh', 10, 0, 10000)}
+              </>
+            ) : (
               <div className="text-[9px] text-slate-400 italic text-center py-1">
-                Connect battery node to DC Link to enable
+                Wire battery node to DC Link to configure
               </div>
             )}
-            {renderInput('State of Charge', 'batterySOC', '%', 1, 0, 100)}
-            {renderInput('Capacity', 'batteryCapacityKwh', 'kWh', 10, 0, 10000)}
           </div>
         )}
 

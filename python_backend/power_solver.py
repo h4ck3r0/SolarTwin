@@ -107,7 +107,7 @@ class SimulationDataPoint(BaseModel):
     solarCurrentDc: float
     solarIrradiance: float
     solarTemperature: float
-    batterySOC: float
+    batterySOC: Optional[float] = None  # None = battery disconnected
     windPowerWatts: float
     igbtTemperature: float = 25.0
 
@@ -237,6 +237,7 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
     """
     3-phase EMT solver for UPQC microgrid.
     Fixed: BUG-03 (kp/ki wired into PI), BUG-13 (cold-start), x_grid reactive drop, RK4 v_dc.
+    FIX BUG-B01: Battery SOC now driven by solar surplus, not DC-link error.
     """
     time_arr = np.zeros(steps)
     v_grid   = np.zeros((3, steps))
@@ -254,6 +255,9 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
 
     # FIX BUG-03: shunt PI integral state for dynamic compensation efficiency
     shunt_err_int = 0.0
+
+    # FIX BUG-B01: track battery connected state
+    battery_connected = battery_capacity_wh > 0.0 and initial_soc >= 0.0
 
     h3, h5, h7, h11, h13 = h_mags
     pA, pB, pC = 0.0, -2 * np.pi / 3, 2 * np.pi / 3
@@ -361,20 +365,33 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
         p_shunt  = vg_a*i_inj[0, k] + vg_b*i_inj[1, k] + vg_c*i_inj[2, k]
         p_upqc   = p_series + p_shunt
 
-        # FIX BUG-03: Battery PI using passed-in kp/ki (scaled for physical units)
-        err = dc_ref - v_dc
-        v_dc_int += err * dt
+        # FIX BUG-B01: Battery charge/discharge driven by real solar surplus, not DC-link error.
+        # p_surplus > 0 → solar exceeds load → charge battery
+        # p_surplus < 0 → deficit → discharge battery to cover load
+        p_surplus = float(solar_power_array[k]) + float(wind_power_array[k]) - (load_kw * 1000.0)
         p_bat = 0.0
-        if battery_capacity_wh > 0.0 and battery_soc > 2.0:
-            # kp in range 0..100, ki in range 0..500 → scale to W
-            p_bat = (kp * 2000.0) * err + (ki * 50.0) * v_dc_int
-            p_bat = max(min(p_bat, battery_capacity_wh * 2.0), -battery_capacity_wh * 2.0)
-            battery_soc -= (p_bat * dt) / (battery_capacity_wh * 3600.0) * 100.0
-            battery_soc = max(0.0, battery_soc)
+        if battery_connected and battery_soc > 2.0:
+            # Charge rate limited to 1C (battery_capacity_wh Wh → battery_capacity_wh W)
+            max_charge_rate = battery_capacity_wh  # 1C rate in Watts
+            p_bat = np.clip(p_surplus, -max_charge_rate, max_charge_rate)
+            # Discharge stops at SOC <= 2%, charge stops at SOC >= 99%
+            if p_bat < 0 and battery_soc <= 2.0:
+                p_bat = 0.0
+            if p_bat > 0 and battery_soc >= 99.0:
+                p_bat = 0.0
+            # SOC update: positive p_bat = charging (SOC increases)
+            battery_soc += (p_bat * dt) / (battery_capacity_wh * 36.0)  # *36 = 3600s * 100%
+            battery_soc = np.clip(battery_soc, 0.0, 100.0)
         bsoc_arr[k] = battery_soc
 
+        # DC-link PI keeps bus voltage — uses UPQC consumption and battery feedforward
+        # Gains are scaled: kp in 0..100 range → physical scale ×2000 gives ~MW-class response
+        err = dc_ref - v_dc
+        v_dc_int += err * dt
+        p_dc_regulation = (kp * 2000.0) * err + (ki * 50.0) * v_dc_int
+
         # FIX BUG-13: RK4 v_dc integration — regularized denominator, no hard skip
-        p_net = p_bat - p_upqc
+        p_net = p_dc_regulation - p_upqc
         v_dc = _rk4_vdc(v_dc, p_net, C_dc, dt)
         v_dc = max(v_dc, 0.0)
         v_dc_arr[k] = v_dc
@@ -432,6 +449,16 @@ def run_simulation(req: SimulationRequest):
             'modules': int(float(np_dict.get('solarModulesSeries',   params.solarModulesSeries))),
             'watts':   float(np_dict.get('solarPanelWatts', params.solarPanelWatts)),
             'vmpp':    float(np_dict.get('solarVmpp',       params.solarVmpp)),
+        })
+
+    # FIX BUG-B02: if no solar nodes matched the topology labels, fall back to
+    # the global params so solar power is never silently zeroed out.
+    if not solar_panels:
+        solar_panels.append({
+            'strings': int(params.solarStringsParallel),
+            'modules': int(params.solarModulesSeries),
+            'watts':   float(params.solarPanelWatts),
+            'vmpp':    float(params.solarVmpp),
         })
 
     # Create one MPPT tracker per panel (P&O algorithm)
@@ -533,22 +560,38 @@ def run_simulation(req: SimulationRequest):
             total_battery_kwh += cap
             soc_capacity_pairs.append((soc, cap))
 
-    # FIX BUG-02: capacity-weighted average SOC across all BESS nodes
+    # FIX BUG-B04 (revised): Three cases:
+    # 1. Battery nodes found in topology → use capacity-weighted SOC
+    # 2. No battery nodes AND topology is completely empty (no nodes sent) → use global params as fallback
+    # 3. No battery nodes BUT topology has nodes → battery was intentionally disconnected → None
     if soc_capacity_pairs and total_battery_kwh > 0:
         effective_battery_soc = sum(s * c for s, c in soc_capacity_pairs) / total_battery_kwh
     elif not soc_capacity_pairs:
-        effective_battery_soc = -1.0  # signal to frontend: battery disconnected
+        topology_has_nodes = len(req.topology.nodes) > 0
+        if not topology_has_nodes and params.batteryCapacityKwh > 0:
+            # Empty topology sent — old client path, use global params as safe default
+            effective_battery_soc = float(params.batterySOC)
+            total_battery_kwh = float(params.batteryCapacityKwh)
+        else:
+            # Topology was provided but battery node is not wired → truly disconnected
+            effective_battery_soc = None
 
     # ── Detect grid connection from topology ─────────────────────────────────
+    # FIX BUG-B03: fallback to params.isGridConnected if no grid node found in topology
     actual_grid_connected = False
+    found_grid_node = False
     for node in req.topology.nodes:
         if node.id not in connected_node_ids:
             continue
         if any(kw in (node.id + " " + node.data.label).lower() for kw in ['grid', 'main', 'source']):
+            found_grid_node = True
             np_dict = node.data.parameters or {}
             if np_dict.get('isTripped') not in [True, 'true', 'True', 1, '1']:
                 actual_grid_connected = True
                 break
+    if not found_grid_node:
+        # No grid node in topology — fall back to global parameter
+        actual_grid_connected = bool(params.isGridConnected)
 
     # ── Run EMT solver ───────────────────────────────────────────────────────
     (time_arr, v_grid, i_grid, v_load, i_load,
@@ -604,7 +647,8 @@ def run_simulation(req: SimulationRequest):
             solarCurrentDc=round(float(solar_i[k]), 2),
             solarIrradiance=round(float(irr_arr[k]), 2),
             solarTemperature=round(float(tmp_arr[k]), 2),
-            batterySOC=round(float(bsoc_arr[k]), 4),
+            # FIX BUG-B04: batterySOC is None when battery is disconnected
+            batterySOC=round(float(bsoc_arr[k]), 4) if effective_battery_soc is not None else None,
             windPowerWatts=round(float(wind_pwr[k]), 2),
             igbtTemperature=round(float(tj), 2),
         )

@@ -133,6 +133,15 @@ export default function StatisticsPage() {
   const [data, setData] = useState<SimulationDataPoint[]>([]);
   const [params, setParams] = useState<SimulationParameters | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedChart, setExpandedChart] = useState<any>(null); // For full-screen graph
+
+  // Downsample data for rendering so recharts doesn't freeze/mess up on 10s+ simulations
+  const chartData = useMemo(() => {
+    if (data.length <= 500) return data;
+    const step = Math.ceil(data.length / 500);
+    return data.filter((_, i) => i % step === 0);
+  }, [data]);
+
 
   useEffect(() => {
     const stored = localStorage.getItem('simulation_results');
@@ -177,9 +186,10 @@ export default function StatisticsPage() {
     const isDcDrain = !isDcCrash && vdcDrop > 5;
 
     const solarPeak = Math.max(...data.map(d => d.solarPowerWatts));
-    const loadKw    = 15; // default — could pull from data in future
-    const rGrid     = 0.1;
-    const vBase     = (415 / Math.sqrt(3)) * Math.sqrt(2);
+    // FIX BUG-B06: use actual loadActivePower from params instead of hardcoded 15
+    const loadKw    = params?.loadActivePower ?? 15;
+    const rGrid     = params?.gridResistance ?? 0.1;
+    const vBase     = ((params?.microgridVoltage ?? 415) / Math.sqrt(3)) * Math.sqrt(2);
     const iGridEst  = solarPeak / (1.5 * vBase);
     const pDrainEst = rGrid * iGridEst * iGridEst;
 
@@ -197,10 +207,10 @@ export default function StatisticsPage() {
           `Capacitor discharges: ΔV = ΔQ/C = P_drain × Δt / (C × Vdc) — cannot recover without sufficient battery capacity`,
         ],
         fixes: [
-          { param: 'batteryCapacityKwh', current: '100 kWh', recommended: '≥ 500 kWh', why: 'Larger battery gives PI controller enough headroom to inject >200kW during transient' },
+          { param: 'batteryCapacityKwh', current: `${params?.batteryCapacityKwh ?? 100} kWh`, recommended: '≥ 500 kWh', why: 'Larger battery gives PI controller enough headroom to inject >200kW during transient' },
           { param: 'gridResistance', current: `${rGrid} Ω`, recommended: '≤ 0.01 Ω', why: `V_inj = R × I_grid. Lower R → smaller voltage injection → less DC power consumed per cycle` },
-          { param: 'dcCapacitance', current: '2200 μF', recommended: '≥ 50000 μF', why: 'Larger capacitor slows ΔV/Δt rate. Gives PI controller more time to respond before voltage falls below threshold' },
-          { param: 'solarStringsParallel', current: '88', recommended: '≤ 10', why: `Reducing solar power reduces I_grid export, which reduces V_inj and P_drain proportionally (P ∝ I²)` },
+          { param: 'dcCapacitance', current: `${params?.dcCapacitance ?? 2200} μF`, recommended: '≥ 50000 μF', why: 'Larger capacitor slows ΔV/Δt rate. Gives PI controller more time to respond before voltage falls below threshold' },
+          { param: 'solarStringsParallel', current: `${params?.solarStringsParallel ?? 88}`, recommended: '≤ 10', why: `Reducing solar power reduces I_grid export, which reduces V_inj and P_drain proportionally (P ∝ I²)` },
         ],
       });
     } else if (isDcDrain) {
@@ -215,8 +225,8 @@ export default function StatisticsPage() {
           `Steady-state droop = P_drain / (kp_dc × C_dc) — PI gain too low to eliminate error`,
         ],
         fixes: [
-          { param: 'kp (PI gain)', current: '0.5', recommended: '5.0 – 10.0', why: 'Higher Kp forces PI controller to drive Vdc error to zero faster, eliminating steady-state droop' },
-          { param: 'ki (PI integral)', current: '10', recommended: '50 – 100', why: 'Higher Ki eliminates steady-state error. Integral term accumulates until Vdc = 700V exactly' },
+          { param: 'kp (PI gain)', current: `${params?.kp ?? 0.5}`, recommended: '5.0 – 10.0', why: 'Higher Kp forces PI controller to drive Vdc error to zero faster, eliminating steady-state droop' },
+          { param: 'ki (PI integral)', current: `${params?.ki ?? 10}`, recommended: '50 – 100', why: 'Higher Ki eliminates steady-state error. Integral term accumulates until Vdc = 700V exactly' },
           { param: 'gridResistance', current: `${rGrid} Ω`, recommended: '≤ 0.05 Ω', why: 'Lower grid impedance reduces power consumed by series compensator' },
         ],
       });
@@ -258,7 +268,7 @@ export default function StatisticsPage() {
         fixes: [
           { param: 'gridReactance', current: `${params?.gridReactance ?? 0.2} Ω`, recommended: '≤ 0.05 Ω', why: 'Lower grid impedance reduces sag magnitude at PCC' },
           { param: 'filterInductance', current: `${params?.filterInductance ?? 2.5} mH`, recommended: '5 mH', why: 'Improves current waveform quality, reduces peak grid current that causes sag' },
-          { param: 'isGridConnected', current: 'true', recommended: 'Check tie-line capacity', why: 'If grid is weak (high impedance), islanded operation may give better voltage stability' },
+          { param: 'isGridConnected', current: `${params?.isGridConnected ?? true}`, recommended: 'Check tie-line capacity', why: 'If grid is weak (high impedance), islanded operation may give better voltage stability' },
         ],
       });
     }
@@ -285,8 +295,9 @@ export default function StatisticsPage() {
     const maxIgbt = Math.max(...data.map(d=>d.igbtTemperature||0));
     const solarPk = Math.max(...data.map(d=>d.solarPowerWatts));
     const windPk  = Math.max(...data.map(d=>d.windPowerWatts||0));
-    const socLast = data[data.length-1].batterySOC ?? 80;
-    const isBatteryConnected = socLast >= 0;
+    const socLast = data[data.length-1].batterySOC;
+    // FIX BUG-F03: batterySOC is now Optional (null = disconnected), not -1.0 sentinel
+    const isBatteryConnected = socLast != null && socLast >= 0;
     const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
     const minGridV = Math.max(...data.map(d=>Math.abs(d.gridVoltageA)));
     
@@ -295,21 +306,28 @@ export default function StatisticsPage() {
       { label: 'IGBT Tj Peak',    value: maxIgbt.toFixed(1), unit: '°C', status: maxIgbt>125?'danger':maxIgbt>100?'warn':'ok' as any, sub: 'Limit: 125°C' },
       { label: 'Solar Output',    value: (solarPk/1000).toFixed(1), unit: 'kW', status: solarPk>0?'ok':'warn' as any, sub: solarPk>0?`${data[0].solarIrradiance}W/m²`:'Disconnected' },
       { label: 'Wind Output',     value: (windPk/1000).toFixed(1), unit: 'kW', status: windPk>0?'ok':'warn' as any, sub: windPk>0?'Connected':'Disconnected' },
-      { label: 'Battery SOC',     value: isBatteryConnected ? socLast.toFixed(1) : '--', unit: isBatteryConnected ? '%' : '', status: !isBatteryConnected ? 'warn' : socLast<20?'danger':socLast<50?'warn':'ok' as any, sub: isBatteryConnected ? 'End of simulation' : 'Disconnected' },
+      { label: 'Battery SOC',     value: isBatteryConnected ? (socLast as number).toFixed(1) : '--', unit: isBatteryConnected ? '%' : '', status: !isBatteryConnected ? 'warn' : (socLast as number)<20?'danger':(socLast as number)<50?'warn':'ok' as any, sub: isBatteryConnected ? 'End of simulation' : 'Disconnected' },
       { label: 'Grid Status',     value: isGridDisconnected ? 'OFF-GRID' : minGridV<150?'SAG':'NOMINAL', unit: '', status: isGridDisconnected ? 'warn' : minGridV<150?'danger':'ok' as any, sub: isGridDisconnected ? 'Disconnected' : 'V_grid peak' },
     ];
   }, [data]);
 
   // ── Chart renderers ───────────────────────────────────────────────────────────
   const renderArea = (title: string, dataKey: string, color: string, unit: string, refLines?: {y:number; label:string; color:string}[]) => (
-    <div className={`bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-64`}>
-      <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-        {title}
+    <div 
+      className={`bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-64 cursor-pointer`}
+      onDoubleClick={() => setExpandedChart({ type: 'area', title, dataKey, color, unit, refLines })}
+      title="Double click to expand"
+    >
+      <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+          {title}
+        </div>
+        <span className="text-[9px] text-slate-300 font-normal normal-case">Double-click to expand</span>
       </div>
       <div className="flex-1 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%"  stopColor={color} stopOpacity={0.2} />
@@ -336,14 +354,21 @@ export default function StatisticsPage() {
   );
 
   const renderLines = (title: string, keys: string[], colors: string[], unit: string) => (
-    <div className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-64">
-      <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-        <Activity className="w-3.5 h-3.5 text-slate-400" />
-        {title}
+    <div 
+      className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-64 cursor-pointer"
+      onDoubleClick={() => setExpandedChart({ type: 'line', title, keys, colors, unit })}
+      title="Double click to expand"
+    >
+      <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5 text-slate-400" />
+          {title}
+        </div>
+        <span className="text-[9px] text-slate-300 font-normal normal-case">Double-click to expand</span>
       </div>
       <div className="flex-1 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
             <XAxis dataKey="time" tickFormatter={(t) => `${(t*1000).toFixed(0)}`} stroke="#cbd5e1" style={{fontSize:10,fontFamily:'monospace'}} tickLine={false} axisLine={false} />
             <YAxis stroke="#cbd5e1" style={{fontSize:10,fontFamily:'monospace'}} domain={['auto','auto']} unit={` ${unit}`} tickLine={false} axisLine={false} />
@@ -497,7 +522,7 @@ export default function StatisticsPage() {
                     <td className="p-3 font-bold text-amber-600">{dp.solarPowerWatts.toFixed(0)}</td>
                     <td className={`p-3 font-bold ${(dp.igbtTemperature||0)>125?'text-rose-600':'text-red-500'}`}>{dp.igbtTemperature?.toFixed(1) || '25.0'}</td>
                     <td className="p-3 font-bold text-cyan-600">{(dp.windPowerWatts||0).toFixed(0)}</td>
-                    <td className="p-3 font-bold text-emerald-600">{(dp.batterySOC||0).toFixed(2)}</td>
+                    <td className="p-3 font-bold text-emerald-600">{dp.batterySOC != null ? dp.batterySOC.toFixed(2) : '--'}</td>
                   </tr>
                 );
               })}
@@ -505,6 +530,67 @@ export default function StatisticsPage() {
           </table>
         </div>
       </div>
+
+      {/* Full-Screen Chart Modal */}
+      {expandedChart && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-8" onClick={() => setExpandedChart(null)}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl w-full h-full max-h-[90vh] max-w-7xl flex flex-col border border-slate-200/60 overflow-hidden relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                <Activity className="text-sky-500 w-5 h-5" />
+                {expandedChart.title}
+              </h2>
+              <button onClick={() => setExpandedChart(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 w-full p-6 bg-white min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                {expandedChart.type === 'area' ? (
+                  <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <defs>
+                      <linearGradient id={`grad-modal-${expandedChart.dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={expandedChart.color} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={expandedChart.color} stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} />
+                    <XAxis dataKey="time" tickFormatter={(t) => `${(t*1000).toFixed(0)}`} stroke="#94a3b8" style={{fontSize:12,fontFamily:'monospace'}} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#94a3b8" style={{fontSize:12,fontFamily:'monospace'}} domain={['auto','auto']} unit={` ${expandedChart.unit}`} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{backgroundColor:'rgba(255,255,255,0.97)',borderColor:'#e2e8f0',borderRadius:'8px',boxShadow:'0 4px 6px -1px rgb(0 0 0/0.1)'}}
+                      labelStyle={{fontSize:12,color:'#64748b',fontFamily:'monospace',fontWeight:'bold'}}
+                      itemStyle={{fontSize:14,fontFamily:'monospace',fontWeight:'bold'}}
+                      labelFormatter={(l) => `Time: ${(l*1000).toFixed(2)} ms`}
+                    />
+                    {(expandedChart.refLines||[]).map((r:any) => (
+                      <ReferenceLine key={r.y} y={r.y} stroke={r.color} strokeDasharray="4 2" label={{value:r.label,fill:r.color,fontSize:11}} />
+                    ))}
+                    <Area type="monotone" dataKey={expandedChart.dataKey} stroke={expandedChart.color} strokeWidth={3} fillOpacity={1} fill={`url(#grad-modal-${expandedChart.dataKey})`} isAnimationActive={false} />
+                  </AreaChart>
+                ) : (
+                  <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} />
+                    <XAxis dataKey="time" tickFormatter={(t) => `${(t*1000).toFixed(0)}`} stroke="#94a3b8" style={{fontSize:12,fontFamily:'monospace'}} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#94a3b8" style={{fontSize:12,fontFamily:'monospace'}} domain={['auto','auto']} unit={` ${expandedChart.unit}`} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{backgroundColor:'rgba(255,255,255,0.97)',borderColor:'#e2e8f0',borderRadius:'8px',boxShadow:'0 4px 6px -1px rgb(0 0 0/0.1)'}}
+                      labelStyle={{fontSize:12,color:'#64748b',fontFamily:'monospace',fontWeight:'bold'}}
+                      itemStyle={{fontSize:14,fontFamily:'monospace',fontWeight:'bold'}}
+                      labelFormatter={(l) => `Time: ${(l*1000).toFixed(2)} ms`}
+                    />
+                    {expandedChart.keys.map((k:string, i:number) => <Line key={k} type="monotone" dataKey={k} stroke={expandedChart.colors[i]} strokeWidth={2.5} dot={false} isAnimationActive={false} />)}
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

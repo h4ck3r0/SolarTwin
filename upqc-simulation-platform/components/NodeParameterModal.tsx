@@ -171,24 +171,8 @@ export default function NodeParameterModal({
             </button>
           </div>
           
-          {/* Universal Disconnect Switch */}
-          <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-700">Component Status</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={!localParams.isTripped}
-                onChange={(e) => handleChange('isTripped', !e.target.checked as any)}
-              />
-              <div className="w-11 h-6 bg-rose-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-              <span className="ml-3 text-xs font-bold uppercase tracking-wider text-slate-600">
-                {!localParams.isTripped ? 'CONNECTED' : 'TRIPPED'}
-              </span>
-            </label>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[60vh] opacity-100 transition-opacity" style={{ opacity: localParams.isTripped ? 0.5 : 1.0, pointerEvents: localParams.isTripped ? 'none' : 'auto' }}>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[60vh]">
             {isSolar && (
               <>
                 <div className="bg-amber-50 border border-amber-200 rounded p-2 mb-2">

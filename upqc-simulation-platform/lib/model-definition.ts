@@ -68,7 +68,7 @@ export const initialNodes: Node<ElectricalNodeData>[] = [
     data: {
       label: 'DC LINK = 700V',
       type: 'source',
-      details: 'Shared DC Bus\nCapacitor: 3mF',
+      details: 'Shared DC Bus\nCapacitor: 50mF',
     },
   },
   {
@@ -78,8 +78,8 @@ export const initialNodes: Node<ElectricalNodeData>[] = [
     data: {
       label: 'SOLAR PV ARRAY',
       type: 'microgrid',
-      details: '7S × 88P × 415Wp\n= 255.6 kW (STC)',
-      parameters: { solarStringsParallel: 88, solarModulesSeries: 7, solarPanelWatts: 415, solarVmpp: 34.1 },
+      details: '7S × 10P × 415Wp\n= 29.0 kW (STC)',
+      parameters: { solarStringsParallel: 10, solarModulesSeries: 7, solarPanelWatts: 415, solarVmpp: 34.1 },
     },
   },
   {
@@ -89,8 +89,8 @@ export const initialNodes: Node<ElectricalNodeData>[] = [
     data: {
       label: 'BATTERY BESS',
       type: 'source',
-      details: '100kWh BESS\nParallel DC Bus',
-      parameters: { batterySOC: 80, batteryCapacityKwh: 100 },
+      details: '500kWh BESS\nParallel DC Bus',
+      parameters: { batterySOC: 80, batteryCapacityKwh: 500 },
       active: false,
     },
   },
