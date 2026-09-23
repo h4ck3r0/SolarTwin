@@ -1,49 +1,73 @@
 export interface SimulationParameters {
-  // Microgrid parameters
-  microgridVoltage: number; // V
-  microgridFrequency: number; // Hz
-  solarIrradiance: number; // W/m^2
-  solarStringsParallel?: number; // default: 88
-  solarModulesSeries?: number; // default: 7
-  solarPanelWatts?: number; // default: 415 W
-  windSpeed: number; // m/s
-  batterySOC: number; // %
-  dcLinkVoltage: number; // V (target DC voltage)
+  // AC Microgrid
+  microgridVoltage: number;
+  microgridFrequency: number;
 
+  // Solar PV
+  solarIrradiance: number;
+  solarTemperature?: number;
+  ambientTemperature?: number;       // outdoor air temp for IGBT heatsink (°C)
+  solarStringsParallel?: number;
+  solarModulesSeries?: number;
+  solarPanelWatts?: number;
+  solarVmpp?: number;          // MPP voltage per module at STC (V)
+  mpptAlgorithm?: string;      // 'PandO' | 'INC' | 'Fixed'
+  mpptStepSize?: number;       // V — perturbation step size
+  mpptUpdateFreq?: number;     // steps between MPPT perturbations
+
+  // Battery
+  batterySOC: number;
+  batteryCapacityKwh?: number;
+
+  // DC Link & UPQC
+  dcLinkVoltage: number;
+  filterInductance?: number;
+  dcCapacitance?: number;
+  kp?: number;
+  ki?: number;
+
+  // Grid
+  isGridConnected?: boolean;
+  gridResistance?: number;
+  gridReactance?: number;
+
+  // Load
+  loadActivePower?: number;
+  loadPowerFactor?: number;
+  loadHarmonicType?: string;
+  loadTHD?: number;
+
+  // Wind
+  windSpeed?: number;
+  windCutIn?: number;
+  windCutOut?: number;
+  windNominalPower?: number;
+  windInertiaTimeConst?: number;  // rotor inertia time constant (s)
+
+  // Simulation control
+  simulationDuration?: number;
+  irradianceProfile?: string;
+  temperatureProfile?: string;
+  isTripped?: boolean;
 }
 
 export interface SimulationDataPoint {
   time: number;
-  
-  // Three-phase grid voltages (V)
-  gridVoltageA: number;
-  gridVoltageB: number;
-  gridVoltageC: number;
-  
-  // Three-phase grid currents (A)
-  gridCurrentA: number;
-  gridCurrentB: number;
-  gridCurrentC: number;
-  
-  // Three-phase supply/load voltages (V)
-  supplyVoltageA: number;
-  supplyVoltageB: number;
-  supplyVoltageC: number;
-  
-  // Three-phase load currents (A)
-  loadCurrentA: number;
-  loadCurrentB: number;
-  loadCurrentC: number;
-
-
-  // DC link voltage (V)
+  gridVoltageA: number; gridVoltageB: number; gridVoltageC: number;
+  gridCurrentA: number; gridCurrentB: number; gridCurrentC: number;
+  supplyVoltageA: number; supplyVoltageB: number; supplyVoltageC: number;
+  loadCurrentA: number; loadCurrentB: number; loadCurrentC: number;
+  injectingVoltageA: number; injectingVoltageB: number; injectingVoltageC: number;
+  injectingCurrentA: number; injectingCurrentB: number; injectingCurrentC: number;
   dcLinkVoltage: number;
-
-  // Solar PV output telemetry
   solarPowerWatts: number;
   solarVoltageDc: number;
   solarCurrentDc: number;
   solarIrradiance: number;
+  solarTemperature: number;
+  batterySOC?: number;
+  windPowerWatts?: number;
+  igbtTemperature?: number;
 }
 
 export interface SimulationResult {

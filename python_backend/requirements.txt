@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pandapower
+numpy
+pandas
+pydantic
+scipy==1.11.2
+numba==0.58.0

@@ -54,45 +54,45 @@ export default function SimulationStatusWidget({ status }: SimulationStatusProps
   if (status === 'IDLE') return null;
 
   return (
-    <div className="fixed bottom-12 right-[336px] z-40 bg-slate-900/95 backdrop-blur-sm border border-slate-800 rounded shadow-2xl w-80 overflow-hidden font-mono text-xs select-none">
+    <div className="fixed bottom-12 right-[336px] z-40 bg-white/95 backdrop-blur-sm border border-slate-200 rounded shadow-md w-80 overflow-hidden font-mono text-xs select-none">
       {/* Header */}
-      <div className="h-8 bg-slate-950 px-3 flex items-center justify-between border-b border-slate-850">
-        <span className="font-bold tracking-wider text-[10px] text-slate-400 uppercase flex items-center space-x-1.5">
+      <div className="h-8 bg-slate-50 px-3 flex items-center justify-between border-b border-slate-200">
+        <span className="font-bold tracking-wider text-[10px] text-slate-600 uppercase flex items-center space-x-1.5">
           <Settings className={`w-3.5 h-3.5 ${status === 'RUNNING' ? 'animate-spin' : ''}`} />
           <span>Solver Output Bus</span>
         </span>
-        <span className="text-[9px] text-slate-500">MOCK_SOLVER</span>
+        <span className="text-[9px] text-slate-500">PHYSICS_SOLVER</span>
       </div>
 
       {/* Content */}
       <div className="p-3.5 space-y-3">
         {status === 'RUNNING' && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-bold text-amber-500">
+            <div className="flex items-center justify-between text-[11px] font-bold text-amber-600">
               <span className="animate-pulse">Simulation Running...</span>
               <span>{progress}%</span>
             </div>
             
             {/* Progress bar container */}
-            <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-850">
+            <div className="w-full bg-slate-50 rounded-full h-1.5 overflow-hidden border border-slate-200">
               <div
                 className="bg-amber-500 h-full rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
             
-            <div className="text-[10px] text-slate-400 leading-normal line-clamp-2 h-7">
+            <div className="text-[10px] text-slate-600 leading-normal line-clamp-2 h-7">
               {stage}
             </div>
           </div>
         )}
 
         {status === 'COMPLETED' && (
-          <div className="flex items-start space-x-2.5 bg-emerald-950/40 border border-emerald-900/60 p-2.5 rounded">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start space-x-2.5 bg-emerald-50 border border-emerald-200 p-2.5 rounded">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              <div className="font-bold text-emerald-400 text-[11px]">Simulation Completed</div>
-              <div className="text-[9px] text-slate-400">
+              <div className="font-bold text-emerald-700 text-[11px]">Simulation Completed</div>
+              <div className="text-[9px] text-slate-600">
                 Scope bus updated. Select tabs below to plot waveforms.
               </div>
             </div>
@@ -100,11 +100,11 @@ export default function SimulationStatusWidget({ status }: SimulationStatusProps
         )}
 
         {status === 'FAILED' && (
-          <div className="flex items-start space-x-2.5 bg-rose-950/40 border border-rose-900/60 p-2.5 rounded">
-            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start space-x-2.5 bg-rose-50 border border-rose-200 p-2.5 rounded">
+            <AlertCircle className="w-4 h-4 text-rose-700 flex-shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              <div className="font-bold text-rose-400 text-[11px]">Solver Error</div>
-              <div className="text-[9px] text-slate-400">
+              <div className="font-bold text-rose-700 text-[11px]">Solver Error</div>
+              <div className="text-[9px] text-slate-600">
                 A mathematical singularity occurred. Check parameters.
               </div>
             </div>
