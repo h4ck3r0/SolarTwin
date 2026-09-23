@@ -325,9 +325,10 @@ export default function StatisticsPage() {
         </div>
         <span className="text-[9px] text-slate-300 font-normal normal-case">Double-click to expand</span>
       </div>
-      <div className="flex-1 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+      <div className="flex-1 w-full overflow-x-auto overflow-y-hidden custom-scrollbar">
+        <div style={{ width: Math.max(800, chartData.length * 3) + 'px', height: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%"  stopColor={color} stopOpacity={0.2} />
@@ -349,6 +350,7 @@ export default function StatisticsPage() {
             <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2.5} fillOpacity={1} fill={`url(#grad-${dataKey})`} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
@@ -366,9 +368,10 @@ export default function StatisticsPage() {
         </div>
         <span className="text-[9px] text-slate-300 font-normal normal-case">Double-click to expand</span>
       </div>
-      <div className="flex-1 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+      <div className="flex-1 w-full overflow-x-auto overflow-y-hidden custom-scrollbar">
+        <div style={{ width: Math.max(800, chartData.length * 3) + 'px', height: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
             <XAxis dataKey="time" tickFormatter={(t) => `${(t*1000).toFixed(0)}`} stroke="#cbd5e1" style={{fontSize:10,fontFamily:'monospace'}} tickLine={false} axisLine={false} />
             <YAxis stroke="#cbd5e1" style={{fontSize:10,fontFamily:'monospace'}} domain={['auto','auto']} unit={` ${unit}`} tickLine={false} axisLine={false} />
@@ -381,6 +384,7 @@ export default function StatisticsPage() {
             {keys.map((k, i) => <Line key={k} type="monotone" dataKey={k} stroke={colors[i]} strokeWidth={2} dot={false} isAnimationActive={false} />)}
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
@@ -547,9 +551,10 @@ export default function StatisticsPage() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="flex-1 w-full p-6 bg-white min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                {expandedChart.type === 'area' ? (
+            <div className="flex-1 w-full p-6 bg-white min-h-0 overflow-x-auto overflow-y-hidden custom-scrollbar">
+              <div style={{ width: Math.max(1200, chartData.length * 8) + 'px', height: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  {expandedChart.type === 'area' ? (
                   <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                     <defs>
                       <linearGradient id={`grad-modal-${expandedChart.dataKey}`} x1="0" y1="0" x2="0" y2="1">
@@ -584,8 +589,9 @@ export default function StatisticsPage() {
                     />
                     {expandedChart.keys.map((k:string, i:number) => <Line key={k} type="monotone" dataKey={k} stroke={expandedChart.colors[i]} strokeWidth={2.5} dot={false} isAnimationActive={false} />)}
                   </LineChart>
-                )}
-              </ResponsiveContainer>
+                  )}
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         </div>

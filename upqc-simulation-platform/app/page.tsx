@@ -64,6 +64,8 @@ export default function WorkspacePage() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const isLoadedRef = useRef(false);
+
   useEffect(() => {
     setIsClient(true);
     const saved = localStorage.getItem('solar_twin_params');
@@ -72,13 +74,16 @@ export default function WorkspacePage() {
         setParameters(JSON.parse(saved));
       } catch(e) {}
     }
+    isLoadedRef.current = true;
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('solar_twin_params', JSON.stringify(parameters));
+    if (isLoadedRef.current) {
+      localStorage.setItem('solar_twin_params', JSON.stringify(parameters));
+    }
   }, [parameters]);
 
   const handleRunSimulation = async () => {

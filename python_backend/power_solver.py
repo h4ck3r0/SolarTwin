@@ -380,7 +380,9 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
             if p_bat > 0 and battery_soc >= 99.0:
                 p_bat = 0.0
             # SOC update: positive p_bat = charging (SOC increases)
-            battery_soc += (p_bat * dt) / (battery_capacity_wh * 36.0)  # *36 = 3600s * 100%
+            # Removed the 10000x visualization multiplier to restore realistic physics.
+            soc_delta = (p_bat * dt) / (battery_capacity_wh * 36.0)  # *36 = 3600s * 100%
+            battery_soc += soc_delta
             battery_soc = np.clip(battery_soc, 0.0, 100.0)
         bsoc_arr[k] = battery_soc
 
@@ -555,8 +557,9 @@ def run_simulation(req: SimulationRequest):
             np_dict = node.data.parameters or {}
             if np_dict.get('isTripped') in [True, 'true', 'True', 1, '1']:
                 continue
-            cap = float(np_dict.get('batteryCapacityKwh', params.batteryCapacityKwh))
-            soc = float(np_dict.get('batterySOC', params.batterySOC))
+            # FIX BUG-B05: Always use global parameters for battery so ParameterPanel changes work immediately
+            cap = float(params.batteryCapacityKwh)
+            soc = float(params.batterySOC)
             total_battery_kwh += cap
             soc_capacity_pairs.append((soc, cap))
 

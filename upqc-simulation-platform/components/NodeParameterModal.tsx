@@ -226,8 +226,14 @@ export default function NodeParameterModal({
             
             {isBattery && (
               <>
-                {renderInput('Battery SOC', 'batterySOC', '%', 1, 0, 100)}
-                {renderInput('Capacity', 'batteryCapacityKwh', 'kWh', 10, 10, 10000)}
+                <div className="bg-sky-50 border border-sky-200 rounded p-2 mb-2">
+                  <p className="text-[10px] text-sky-700 font-bold flex items-center gap-1">
+                    <span>⚡</span> Managed globally
+                  </p>
+                  <p className="text-[10px] text-sky-600 mt-0.5">
+                    Set Battery SOC and Capacity in the right-side Parameter Panel (Engine section).
+                  </p>
+                </div>
                 {renderInput('Target VDC', 'dcLinkVoltage', 'V', 5, 200, 1500)}
               </>
             )}
