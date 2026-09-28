@@ -47,7 +47,8 @@ export default function LivePredictionDashboard() {
     if (history.length === 0) return;
     const headers = Object.keys(history[0]);
     const rows = history.map(dp => headers.map(k => dp[k]));
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\\n');
+    // FE-R2 FIX: was '\\n' (double-escaped, literal backslash-n in CSV) — fixed to '\n'
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const link = document.createElement('a');
     link.setAttribute('href', encodeURI(csvContent));
     link.setAttribute('download', 'live_history.csv');
@@ -90,7 +91,8 @@ export default function LivePredictionDashboard() {
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className={`text-2xl font-black tracking-tight ${isWarning ? 'text-rose-600' : 'text-slate-800'}`}>
-              {currentValue ? currentValue.toFixed(2) : "0.00"}
+            // FE-R3 FIX: was `currentValue ?` — falsy check fails when value is legitimately 0 (e.g. no solar at night)
+            {currentValue != null ? currentValue.toFixed(2) : "0.00"}
             </span>
             <span className="text-slate-400 font-bold text-xs">{unit}</span>
           </div>

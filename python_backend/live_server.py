@@ -5,6 +5,7 @@ Fixes applied: BUG-07 (duplicate joblib), BUG-08 (O(n) pop), BUG-09 (irradiance 
 """
 import os
 import asyncio
+import contextlib
 from collections import deque
 
 import httpx
@@ -72,7 +73,29 @@ class LSTMModel(nn.Module):
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 
-app = FastAPI(title="SolarTwin LSTM Live Server")
+# BE-R2 FIX: Replace deprecated @app.on_event('startup') with lifespan context manager
+@contextlib.asynccontextmanager
+async def lifespan(app_: FastAPI):
+    """FastAPI lifespan: run startup logic then yield (replaces deprecated on_event)."""
+    # Pre-fill state buffer with approximate steady-state values
+    # BE-R1 FIX: Vrms was 14330 (line voltage kV scale), corrected to 239.6 V (415V LL / sqrt(3))
+    for i in range(SEQ_LENGTH):
+        state_buffer[i, 0] = 800.0   # Irradiance
+        state_buffer[i, 1] = 25.0    # Temp
+        for j, col in enumerate(TARGET_COLS):
+            if   "Vrms" in col: state_buffer[i, 2 + j] = 239.6   # 415V LL / sqrt(3) phase RMS
+            elif "Irms" in col: state_buffer[i, 2 + j] = 6.0
+            elif "Pac"  in col: state_buffer[i, 2 + j] = 250000.0
+            elif "Vdc"  in col: state_buffer[i, 2 + j] = 700.0   # nominal DC link
+            elif "Vpv"  in col: state_buffer[i, 2 + j] = 238.7   # 7S × 34.1V Vmpp
+            else:               state_buffer[i, 2 + j] = 0.0
+
+    asyncio.create_task(background_loop())
+    yield   # server runs here
+    # (cleanup code could go here if needed)
+
+
+app = FastAPI(title="SolarTwin LSTM Live Server", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -215,22 +238,7 @@ def predict_next_step():
 
 # ── Startup & background loop ─────────────────────────────────────────────────
 
-@app.on_event("startup")
-async def startup_event():
-    # Pre-fill state buffer with approximate steady-state values
-    for i in range(SEQ_LENGTH):
-        state_buffer[i, 0] = 800.0   # Irradiance
-        state_buffer[i, 1] = 25.0    # Temp
-        for j, col in enumerate(TARGET_COLS):
-            if   "Vrms" in col: state_buffer[i, 2 + j] = 14330.0
-            elif "Irms" in col: state_buffer[i, 2 + j] = 6.0
-            elif "Pac"  in col: state_buffer[i, 2 + j] = 250000.0
-            elif "Vdc"  in col: state_buffer[i, 2 + j] = 525.0
-            elif "Vpv"  in col: state_buffer[i, 2 + j] = 525.0
-            else:               state_buffer[i, 2 + j] = 0.0
-
-    asyncio.create_task(background_loop())
-
+# (startup moved to lifespan context manager above — BE-R2 fix)
 
 async def background_loop():
     weather_counter = 0

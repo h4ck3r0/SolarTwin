@@ -34,7 +34,8 @@ export default function SolarPVTelemetryCard({
   if (solarNodes.length > 0) {
     solarNodes.forEach(node => {
       const p = node.data?.parameters || {};
-      const strings = p.solarStringsParallel ?? parameters.solarStringsParallel ?? 88;
+      // FE-R1 FIX: was ?? 88 (old crash value), now ?? 10 to match DEFAULT_PARAMETERS
+      const strings = p.solarStringsParallel ?? parameters.solarStringsParallel ?? 10;
       const mods = p.solarModulesSeries ?? parameters.solarModulesSeries ?? 7;
       const rating = p.solarPanelWatts ?? parameters.solarPanelWatts ?? 415;
       const irr = p.solarIrradiance ?? parameters.solarIrradiance ?? 1000;
@@ -58,7 +59,8 @@ export default function SolarPVTelemetryCard({
     avgIrradiance = Math.round(avgIrradiance / solarNodes.length);
   } else {
     // Fallback to global if no nodes
-    const strings = parameters.solarStringsParallel ?? 88;
+    // FE-R1 FIX: was ?? 88 (old crash value), now ?? 10 to match DEFAULT_PARAMETERS
+    const strings = parameters.solarStringsParallel ?? 10;
     const mods = parameters.solarModulesSeries ?? 7;
     const rating = parameters.solarPanelWatts ?? 415;
     const temp = parameters.solarTemperature ?? 25;
