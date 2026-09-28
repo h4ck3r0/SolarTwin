@@ -91,7 +91,9 @@ export const initialNodes: Node<ElectricalNodeData>[] = [
       type: 'source',
       details: '500kWh BESS\nParallel DC Bus',
       parameters: { batterySOC: 80, batteryCapacityKwh: 500 },
-      active: false,
+      // BUG-H04 FIX: derive active from initialEdges instead of hardcoding false
+      // This prevents the "disconnected" flash on first load when edges already exist.
+      active: undefined, // computed below after initialEdges is defined
     },
   },
   {
@@ -254,3 +256,15 @@ export const initialEdges: Edge[] = [
     labelStyle: { fontSize: 9, fill: '#06b6d4', fontWeight: 'bold' },
   },
 ];
+
+// BUG-H04 FIX: Derive battery and wind `active` flags from initialEdges
+// so they are never stale/disconnected on the very first render.
+(function patchInitialActiveFlags() {
+  const connected = new Set(initialEdges.flatMap(e => [e.source, e.target]));
+  for (const node of initialNodes) {
+    if (node.id.includes('battery') || node.id.includes('bess') ||
+        node.id.includes('wind')    || node.id.includes('turbine')) {
+      (node.data as any).active = connected.has(node.id);
+    }
+  }
+})();

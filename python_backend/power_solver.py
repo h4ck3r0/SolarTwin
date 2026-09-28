@@ -249,15 +249,17 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
     v_dc_arr = np.zeros(steps)
     bsoc_arr = np.zeros(steps)
 
+    # BUG-C02 FIX: initial_soc can be None (battery disconnected) — guard before any arithmetic
+    battery_connected = battery_capacity_wh > 0.0 and initial_soc is not None
+    # Safe float; EMT loop will never use it when battery_connected=False
+    initial_soc_safe = float(initial_soc) if initial_soc is not None else 0.0
+
     v_dc = dc_ref
-    battery_soc = initial_soc
+    battery_soc = initial_soc_safe  # BUG-C02: use guarded float, not raw None
     v_dc_int = 0.0                  # DC-link PI integral state
 
     # FIX BUG-03: shunt PI integral state for dynamic compensation efficiency
     shunt_err_int = 0.0
-
-    # FIX BUG-B01: track battery connected state
-    battery_connected = battery_capacity_wh > 0.0 and initial_soc >= 0.0
 
     h3, h5, h7, h11, h13 = h_mags
     pA, pB, pC = 0.0, -2 * np.pi / 3, 2 * np.pi / 3
@@ -365,22 +367,21 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
         p_shunt  = vg_a*i_inj[0, k] + vg_b*i_inj[1, k] + vg_c*i_inj[2, k]
         p_upqc   = p_series + p_shunt
 
-        # FIX BUG-B01: Battery charge/discharge driven by real solar surplus, not DC-link error.
+        # BUG-C03 FIX: Restructured battery charge/discharge logic.
         # p_surplus > 0 → solar exceeds load → charge battery
         # p_surplus < 0 → deficit → discharge battery to cover load
         p_surplus = float(solar_power_array[k]) + float(wind_power_array[k]) - (load_kw * 1000.0)
         p_bat = 0.0
-        if battery_connected and battery_soc > 2.0:
-            # Charge rate limited to 1C (battery_capacity_wh Wh → battery_capacity_wh W)
+        if battery_connected:
             max_charge_rate = battery_capacity_wh  # 1C rate in Watts
-            p_bat = np.clip(p_surplus, -max_charge_rate, max_charge_rate)
-            # Discharge stops at SOC <= 2%, charge stops at SOC >= 99%
-            if p_bat < 0 and battery_soc <= 2.0:
-                p_bat = 0.0
-            if p_bat > 0 and battery_soc >= 99.0:
-                p_bat = 0.0
+            # Pre-check SOC limits BEFORE computing p_bat to fix dead-code guard
+            if p_surplus > 0 and battery_soc >= 99.0:
+                p_bat = 0.0   # Battery full — no charging
+            elif p_surplus < 0 and battery_soc <= 2.0:
+                p_bat = 0.0   # Battery empty — no discharging
+            else:
+                p_bat = np.clip(p_surplus, -max_charge_rate, max_charge_rate)
             # SOC update: positive p_bat = charging (SOC increases)
-            # Removed the 10000x visualization multiplier to restore realistic physics.
             soc_delta = (p_bat * dt) / (battery_capacity_wh * 36.0)  # *36 = 3600s * 100%
             battery_soc += soc_delta
             battery_soc = np.clip(battery_soc, 0.0, 100.0)
@@ -657,12 +658,13 @@ def run_simulation(req: SimulationRequest):
         )
         data_points.append(dp)
 
-    # Persist full results to disk for post-processing / statistics page
-    _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # BUG-H05 FIX: Use __file__-relative path to avoid CWD-dependent resolution
+    # Results are written to the repo root regardless of where uvicorn was started from.
+    _backend_dir = os.path.dirname(os.path.abspath(__file__))
+    _root = os.path.dirname(_backend_dir)
     results_path = os.path.join(_root, "full_simulation_results.json")
     try:
         with open(results_path, "w") as f:
-            # FIX BUG-17: use model_dump() (Pydantic v2 API)
             json.dump([dp.model_dump() for dp in data_points], f)
     except Exception:
         pass

@@ -74,14 +74,18 @@ export default function NodeParameterModal({
         const irrad = weatherData.current.shortwave_radiation;
         const wind = weatherData.current.wind_speed_10m;
         
+        // BUG-M03 FIX: The physics solver reads irradianceProfile / temperatureProfile strings,
+        // not the scalar solarIrradiance / solarTemperature fields. Set both for consistency.
         setLocalParams((prev: any) => ({
           ...prev,
           solarTemperature: temp,
           solarIrradiance: irrad,
-          windSpeed: wind
+          windSpeed: wind,
+          irradianceProfile: `0:${irrad}`,
+          temperatureProfile: `0:${temp}`,
         }));
         
-        alert(`Successfully fetched live data for ${name}, ${country}:\nIrradiance: ${irrad} W/m²\nTemperature: ${temp} °C\nWind Speed: ${wind} m/s`);
+        alert(`✅ Live data synced for ${name}, ${country}:\nIrradiance: ${irrad} W/m²  →  Engine profile set to "0:${irrad}"\nTemperature: ${temp} °C  →  Engine profile set to "0:${temp}"\nWind Speed: ${wind} m/s`);
       }
     } catch (err) {
       alert("Error fetching live weather: " + err);

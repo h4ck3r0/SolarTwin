@@ -179,8 +179,9 @@ export default function WorkspacePage() {
     window.location.reload();
   };
 
-  // FIX BUG-F02: stable callback reference prevents stale closure in SimulationCanvas
-  const handleTopologyChange = useCallback((ids: Set<string>) => {
+  // BUG-H01 FIX: Accept `edges` second arg that SimulationCanvas already passes.
+  // Stable callback reference prevents stale closure in SimulationCanvas (useCallback).
+  const handleTopologyChange = useCallback((ids: Set<string>, _edges?: any[]) => {
     setConnectedNodeIds((prev) => {
       if (prev.size !== ids.size) return new Set(ids);
       for (const id of ids) {

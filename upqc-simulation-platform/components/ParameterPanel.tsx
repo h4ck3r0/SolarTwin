@@ -194,6 +194,21 @@ export default function ParameterPanel({
             {renderInput('Frequency', 'microgridFrequency', 'Hz', 1, 40, 60)}
             {renderInput('Grid Resistance', 'gridResistance', 'Ω', 0.01, 0, 10)}
             {renderInput('Grid Reactance', 'gridReactance', 'Ω', 0.01, 0, 10)}
+            {/* BUG-H03 FIX: isGridConnected toggle — critical for islanded mode */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="text-[9.5px] font-bold text-slate-600 uppercase tracking-wide">Grid Connected</label>
+              <button
+                type="button"
+                onClick={() => handleChange('isGridConnected', !localParams.isGridConnected)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                  localParams.isGridConnected ? 'bg-emerald-500' : 'bg-slate-300'
+                }`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                  localParams.isGridConnected ? 'translate-x-4.5' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </div>
           </div>
         )}
 
@@ -252,8 +267,8 @@ export default function ParameterPanel({
             {renderInput('DC Link Voltage', 'dcLinkVoltage', 'V', 10, 100, 2000)}
             {renderInput('Filter Inductance', 'filterInductance', 'mH', 0.1, 0.1, 100)}
             {renderInput('DC Capacitance', 'dcCapacitance', 'μF', 10, 10, 50000)}
-            {renderInput('Kp (PI)', 'kp', 'gain', 0.1, 0, 100)}
-            {renderInput('Ki (PI)', 'ki', 'gain', 1, 0, 500)}
+            {renderInput('Kp (PI)', 'kp', 'gain', 0.1, 0, 1000)}
+            {renderInput('Ki (PI)', 'ki', 'gain', 1, 0, 5000)}
           </div>
         )}
 

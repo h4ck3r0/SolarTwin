@@ -9,7 +9,7 @@ import { SimulationDataPoint, SimulationParameters } from '@/lib/simulation-type
 import Link from 'next/link';
 import {
   ArrowLeft, Activity, Download, ChevronRight, AlertTriangle,
-  Flame, ZapOff, CheckCircle2, TrendingDown, Lightbulb, X,
+  ZapOff, CheckCircle2, TrendingDown, Lightbulb, X,
   ChevronDown, ChevronUp,
 } from 'lucide-react';
 
@@ -246,14 +246,17 @@ export default function StatisticsPage() {
         ],
         fixes: [
           { param: 'solarTemperature', current: `${data[0].solarTemperature?.toFixed(0) || '25'}°C`, recommended: '≤ 35°C (ambient)', why: 'Lower ambient directly reduces T_junction by same delta. Real fix: add forced air or liquid cooling' },
-          { param: 'loadActivePower', current: `${((params?.loadActivePower ?? 15000) / 1000).toFixed(1)} kW`, recommended: 'Derate by 20%', why: 'Reducing load current lowers I²R switching losses inside IGBT module' },
+          { param: 'loadActivePower', current: `${(params?.loadActivePower ?? 10).toFixed(1)} kW`, recommended: 'Derate by 20%', why: 'Reducing load current lowers I²R switching losses inside IGBT module' },
           { param: 'filterInductance', current: `${params?.filterInductance ?? 2.5} mH`, recommended: '5–10 mH', why: 'Higher inductance reduces current ripple → lower peak IGBT current → lower switching losses' },
         ],
       });
     }
 
+    // Compute grid status once (used by both sag check and healthy card)
     const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
-    const minGridV = Math.max(...data.map(d => Math.abs(d.gridVoltageA)));
+
+    // BUG-M01 FIX: was Math.max (found peak, never triggered sag) — corrected to Math.min
+    const minGridV = Math.min(...data.map(d => Math.abs(d.gridVoltageA)));
     if (!isGridDisconnected && minGridV < 300) {
       results.push({
         id: 'grid-sag',
@@ -299,7 +302,8 @@ export default function StatisticsPage() {
     // FIX BUG-F03: batterySOC is now Optional (null = disconnected), not -1.0 sentinel
     const isBatteryConnected = socLast != null && socLast >= 0;
     const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
-    const minGridV = Math.max(...data.map(d=>Math.abs(d.gridVoltageA)));
+    // BUG-M02 FIX: was Math.max (never detected sag) — corrected to Math.min
+    const minGridV = Math.min(...data.map(d=>Math.abs(d.gridVoltageA)));
     
     return [
       { label: 'DC Link (final)', value: vdcLast.toFixed(1), unit: 'V',  status: vdcLast<400?'danger':vdcLast<680?'warn':'ok' as any, sub: `Min: ${vdcMin.toFixed(1)}V` },
