@@ -255,14 +255,14 @@ export default function StatisticsPage() {
     // Compute grid status once (used by both sag check and healthy card)
     const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
 
-    // BUG-M01 FIX: was Math.max (found peak, never triggered sag) — corrected to Math.min
-    const minGridV = Math.min(...data.map(d => Math.abs(d.gridVoltageA)));
-    if (!isGridDisconnected && minGridV < 300) {
+    // FIX: Using Math.max finds the *peak* of the AC sine wave. Math.min would just find the zero-crossing (0V).
+    const peakGridV = Math.max(...data.map(d => Math.abs(d.gridVoltageA)));
+    if (!isGridDisconnected && peakGridV < 300) {
       results.push({
         id: 'grid-sag',
         severity: 'warning',
         title: 'GRID FAULT — Severe Voltage Sag',
-        subtitle: `Minimum measured grid voltage = ${minGridV.toFixed(1)}V (peak). Series UPQC may be undersized.`,
+        subtitle: `Peak measured grid voltage = ${peakGridV.toFixed(1)}V (Expected ~339V). Series UPQC may be undersized.`,
         rootCause: [
           `Grid voltage sag: V_terminal = V_source − R_grid × I_grid`,
           `With high export current the terminal voltage can sag below compensation range`,
@@ -302,8 +302,8 @@ export default function StatisticsPage() {
     // FIX BUG-F03: batterySOC is now Optional (null = disconnected), not -1.0 sentinel
     const isBatteryConnected = socLast != null && socLast >= 0;
     const isGridDisconnected = data.every(dp => dp.gridVoltageA === 0);
-    // BUG-M02 FIX: was Math.max (never detected sag) — corrected to Math.min
-    const minGridV = Math.min(...data.map(d=>Math.abs(d.gridVoltageA)));
+    // Use Math.max to get the peak of the AC sine wave
+    const peakGridV = Math.max(...data.map(d=>Math.abs(d.gridVoltageA)));
     
     return [
       { label: 'DC Link (final)', value: vdcLast.toFixed(1), unit: 'V',  status: vdcLast<400?'danger':vdcLast<680?'warn':'ok' as any, sub: `Min: ${vdcMin.toFixed(1)}V` },
@@ -311,7 +311,7 @@ export default function StatisticsPage() {
       { label: 'Solar Output',    value: (solarPk/1000).toFixed(1), unit: 'kW', status: solarPk>0?'ok':'warn' as any, sub: solarPk>0?`${data[0].solarIrradiance}W/m²`:'Disconnected' },
       { label: 'Wind Output',     value: (windPk/1000).toFixed(1), unit: 'kW', status: windPk>0?'ok':'warn' as any, sub: windPk>0?'Connected':'Disconnected' },
       { label: 'Battery SOC',     value: isBatteryConnected ? (socLast as number).toFixed(1) : '--', unit: isBatteryConnected ? '%' : '', status: !isBatteryConnected ? 'warn' : (socLast as number)<20?'danger':(socLast as number)<50?'warn':'ok' as any, sub: isBatteryConnected ? 'End of simulation' : 'Disconnected' },
-      { label: 'Grid Status',     value: isGridDisconnected ? 'OFF-GRID' : minGridV<150?'SAG':'NOMINAL', unit: '', status: isGridDisconnected ? 'warn' : minGridV<150?'danger':'ok' as any, sub: isGridDisconnected ? 'Disconnected' : 'V_grid peak' },
+      { label: 'Grid Status',     value: isGridDisconnected ? 'OFF-GRID' : peakGridV<300?'SAG':'NOMINAL', unit: '', status: isGridDisconnected ? 'warn' : peakGridV<300?'danger':'ok' as any, sub: isGridDisconnected ? 'Disconnected' : 'V_grid peak' },
     ];
   }, [data]);
 
@@ -440,53 +440,73 @@ export default function StatisticsPage() {
       </div>
 
       {/* Chart Zones */}
-      <div className="mb-10">
-        <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <div className="w-1 h-4 bg-sky-500 rounded" /> Grid & Load Interface
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {renderLines("Grid Voltage (3-Phase)", ["gridVoltageA","gridVoltageB","gridVoltageC"], ["#e11d48","#d97706","#0284c7"], "V")}
-          {renderLines("Load Current (3-Phase)", ["loadCurrentA","loadCurrentB","loadCurrentC"], ["#e11d48","#d97706","#0284c7"], "A")}
-        </div>
-      </div>
+      {params?.simulationMode !== 'EMS' ? (
+        <>
+          <div className="mb-10">
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-sky-500 rounded" /> Grid & Load Interface
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {renderLines("Grid Voltage (3-Phase)", ["gridVoltageA","gridVoltageB","gridVoltageC"], ["#e11d48","#d97706","#0284c7"], "V")}
+              {renderLines("Load Current (3-Phase)", ["loadCurrentA","loadCurrentB","loadCurrentC"], ["#e11d48","#d97706","#0284c7"], "A")}
+            </div>
+          </div>
 
-      <div className="mb-10">
-        <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <div className="w-1 h-4 bg-purple-500 rounded" /> UPQC Power Electronics
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {renderLines("Series Injection Voltage", ["injectingVoltageA","injectingVoltageB","injectingVoltageC"], ["#9333ea","#c084fc","#e879f9"], "V")}
-          {renderLines("Shunt Injection Current", ["injectingCurrentA","injectingCurrentB","injectingCurrentC"], ["#9333ea","#c084fc","#e879f9"], "A")}
-          {renderArea("DC Link Voltage", "dcLinkVoltage", "#f97316", "V", [
-            { y: 700, label: 'Nominal 700V', color: '#16a34a' },
-            { y: 400, label: 'FAULT <400V',  color: '#e11d48' },
-          ])}
-        </div>
-      </div>
+          <div className="mb-10">
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-purple-500 rounded" /> UPQC Power Electronics
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {renderLines("Series Injection Voltage", ["injectingVoltageA","injectingVoltageB","injectingVoltageC"], ["#9333ea","#c084fc","#e879f9"], "V")}
+              {renderLines("Shunt Injection Current", ["injectingCurrentA","injectingCurrentB","injectingCurrentC"], ["#9333ea","#c084fc","#e879f9"], "A")}
+              {renderArea("DC Link Voltage", "dcLinkVoltage", "#f97316", "V", [
+                { y: 700, label: 'Nominal 700V', color: '#16a34a' },
+                { y: 400, label: 'FAULT <400V',  color: '#e11d48' },
+              ])}
+            </div>
+          </div>
 
-      <div className="mb-10">
-        <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <div className="w-1 h-4 bg-amber-500 rounded" /> Solar PV & Thermal Health
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {renderArea("Solar PV Output", "solarPowerWatts", "#fbbf24", "W")}
-          {renderArea("Solar DC Voltage (Vmpp)", "solarVoltageDc", "#eab308", "V")}
-          {renderArea("Solar Irradiance", "solarIrradiance", "#f59e0b", "W/m²")}
-          {renderArea("Panel Temperature", "solarTemperature", "#ef4444", "°C", [
-            { y: 25, label: 'STC 25°C', color: '#16a34a' },
-            { y: 65, label: 'Hot day 65°C', color: '#f97316' },
-          ])}
+          <div className="mb-10">
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-amber-500 rounded" /> Solar PV & Thermal Health
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {renderArea("Solar PV Output", "solarPowerWatts", "#fbbf24", "W")}
+              {renderArea("Solar DC Voltage (Vmpp)", "solarVoltageDc", "#eab308", "V")}
+              {renderArea("Solar Irradiance", "solarIrradiance", "#f59e0b", "W/m²")}
+              {renderArea("Panel Temperature", "solarTemperature", "#ef4444", "°C", [
+                { y: 25, label: 'STC 25°C', color: '#16a34a' },
+                { y: 65, label: 'Hot day 65°C', color: '#f97316' },
+              ])}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              {renderArea("IGBT Junction Temp", "igbtTemperature", "#ef4444", "°C", [
+                { y: 125, label: 'LIMIT 125°C', color: '#e11d48' },
+              ])}
+              {renderArea("Battery SOC", "batterySOC", "#10b981", "%", [
+                { y: 20, label: 'Low SOC 20%', color: '#f97316' },
+              ])}
+              {renderArea("Wind Power", "windPowerWatts", "#06b6d4", "W")}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="mb-10">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="w-1 h-4 bg-emerald-500 rounded" /> 24-Hour Energy Management (Duck Curve)
+          </h2>
+          <div className="grid grid-cols-1 gap-4 mb-4">
+            {renderLines("Energy Balance (Solar vs Total Load)", ["solarPowerWatts", "loadCurrentA"], ["#f59e0b", "#e11d48"], "Watts")}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {renderArea("Battery State of Charge", "batterySOC", "#10b981", "%")}
+            {renderArea("Grid Exchange (Watts)", "gridCurrentA", "#0ea5e9", "Watts", [
+              { y: 0, label: 'Net Zero', color: '#94a3b8' },
+            ])}
+            {renderArea("Solar Irradiance", "solarIrradiance", "#fcd34d", "W/m²")}
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {renderArea("IGBT Junction Temp", "igbtTemperature", "#ef4444", "°C", [
-            { y: 125, label: 'LIMIT 125°C', color: '#e11d48' },
-          ])}
-          {renderArea("Battery SOC", "batterySOC", "#10b981", "%", [
-            { y: 20, label: 'Low SOC 20%', color: '#f97316' },
-          ])}
-          {renderArea("Wind Power", "windPowerWatts", "#06b6d4", "W")}
-        </div>
-      </div>
+      )}
 
       {/* Raw Data Table */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">

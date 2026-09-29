@@ -166,6 +166,7 @@ export default function ParameterPanel({
   const hasUPQC    = [...connectedNodeIds].some(id => id.includes('series') || id.includes('shunt') || id.includes('upqc'));
   // If nothing is connected yet (fresh canvas), show everything
   const nothingConnected = connectedNodeIds.size === 0;
+  const isEMS = localParams.simulationMode === 'EMS';
 
   return (
     <div className="w-48 bg-white border-l border-slate-200 flex flex-col h-full overflow-hidden text-slate-700 select-none font-mono text-[10px]">
@@ -180,7 +181,34 @@ export default function ParameterPanel({
         {/* ── Simulation Engine — always visible ───────────── */}
         <div className="space-y-2">
           <h3 className="text-[9px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1">Engine</h3>
-          {renderInput('Duration', 'simulationDuration', 's', 0.1, 0.1, 10)}
+          <div className="flex items-center justify-between bg-indigo-50/50 p-2 border border-indigo-100 rounded">
+            <span className="text-[10px] font-bold text-indigo-800">Mode</span>
+            <div className="flex bg-slate-200 rounded p-0.5">
+              <button
+                type="button"
+                onClick={() => handleChange('simulationMode', 'EMT')}
+                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${
+                  (localParams.simulationMode === 'EMT' || !localParams.simulationMode) 
+                    ? 'bg-white text-indigo-700 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                EMT (50ms)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange('simulationMode', 'EMS')}
+                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${
+                  localParams.simulationMode === 'EMS' 
+                    ? 'bg-white text-indigo-700 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                EMS (24h)
+              </button>
+            </div>
+          </div>
+          {!isEMS && renderInput('Duration (s)', 'simulationDuration', 's', 0.1, 0.1, 10)}
           {renderStringInput('Irradiance Profile (t:W/m²)', 'irradianceProfile')}
           {renderStringInput('Temperature Profile (t:°C)', 'temperatureProfile')}
           <p className="text-[8px] text-indigo-400 leading-tight">Profile format: <span className="font-mono">time:value, time:value</span>. Controls irradiance &amp; temp fed to the solver — edit only here.</p>
@@ -190,10 +218,14 @@ export default function ParameterPanel({
         {(nothingConnected || hasGrid) && (
           <div className="space-y-2">
             <h3 className="text-[9px] font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-100 pb-1">AC Microgrid</h3>
-            {renderInput('Nominal Voltage', 'microgridVoltage', 'V', 5, 100, 1000)}
-            {renderInput('Frequency', 'microgridFrequency', 'Hz', 1, 40, 60)}
-            {renderInput('Grid Resistance', 'gridResistance', 'Ω', 0.01, 0, 10)}
-            {renderInput('Grid Reactance', 'gridReactance', 'Ω', 0.01, 0, 10)}
+            {!isEMS && (
+              <>
+                {renderInput('Nominal Voltage', 'microgridVoltage', 'V', 5, 100, 1000)}
+                {renderInput('Frequency', 'microgridFrequency', 'Hz', 1, 40, 60)}
+                {renderInput('Grid Resistance', 'gridResistance', 'Ω', 0.01, 0, 10)}
+                {renderInput('Grid Reactance', 'gridReactance', 'Ω', 0.01, 0, 10)}
+              </>
+            )}
             {/* BUG-H03 FIX: isGridConnected toggle — critical for islanded mode */}
             <div className="flex items-center justify-between pt-1">
               <label className="text-[9.5px] font-bold text-slate-600 uppercase tracking-wide">Grid Connected</label>
@@ -212,16 +244,7 @@ export default function ParameterPanel({
           </div>
         )}
 
-        {/* ── Load ─ show if load node connected ───────────── */}
-        {(nothingConnected || hasLoad) && (
-          <div className="space-y-2">
-            <h3 className="text-[9px] font-black text-rose-700 uppercase tracking-widest border-b border-rose-100 pb-1">Load</h3>
-            {renderInput('Active Power', 'loadActivePower', 'kW', 1, 0, 2000)}
-            {renderInput('Power Factor', 'loadPowerFactor', 'cosφ', 0.01, 0.1, 1.0)}
-            {renderSelect('Harmonic Type', 'loadHarmonicType', ['Rectifier', 'VFD', 'ArcFurnace', 'Clean'])}
-            {renderInput('Custom THD', 'loadTHD', '%', 1, 0, 100)}
-          </div>
-        )}
+        {/* Global Load settings removed in favor of drag-and-drop Node specific settings */}
 
         {/* ── Solar PV ─ show if solar node connected ───────── */}
         {(nothingConnected || hasSolar) && (
@@ -261,7 +284,7 @@ export default function ParameterPanel({
         )}
 
         {/* ── UPQC ─ show if UPQC/inverter node connected ───── */}
-        {(nothingConnected || hasUPQC) && (
+        {(!isEMS) && (nothingConnected || hasUPQC) && (
           <div className="space-y-2">
             <h3 className="text-[9px] font-black text-purple-700 uppercase tracking-widest border-b border-purple-100 pb-1">UPQC</h3>
             {renderInput('DC Link Voltage', 'dcLinkVoltage', 'V', 10, 100, 2000)}
@@ -273,7 +296,7 @@ export default function ParameterPanel({
         )}
 
         {/* ── Wind ─ show only if wind turbine node connected ── */}
-        {(nothingConnected || hasWind) && (
+        {(!isEMS) && (nothingConnected || hasWind) && (
           <div className="space-y-2">
             <h3 className="text-[9px] font-black text-cyan-700 uppercase tracking-widest border-b border-cyan-100 pb-1">
               Wind Turbine {!nothingConnected && hasWind && <span className="text-[8px] font-normal text-cyan-500 ml-1">🌀 ∥ AC Bus</span>}

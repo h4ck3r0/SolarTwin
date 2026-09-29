@@ -125,6 +125,21 @@ export default function NodeParameterModal({
     </div>
   );
 
+  const renderStringInput = (label: string, key: keyof SimulationParameters, placeholder: string) => (
+    <div className="flex flex-col space-y-1">
+      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+        {label}
+      </label>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={localParams[key] ?? ''}
+        onChange={(e) => handleChange(key, e.target.value)}
+        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-sm text-slate-900 font-mono focus:border-sky-500 focus:outline-none"
+      />
+    </div>
+  );
+
 
   const nodeName = (nodeLabel || '').toLowerCase() + " " + nodeId.toLowerCase();
   const isSolar = nodeName.includes('solar') || nodeName.includes('pv');
@@ -196,7 +211,8 @@ export default function NodeParameterModal({
             
             {isLoad && (
               <>
-                {renderInput('Active Power', 'loadActivePower', 'kW', 5, 0, 1000)}
+                {renderInput('Active Power Peak', 'loadActivePower', 'kW', 1, 0, 1000)}
+                {renderStringInput('24h Power Profile (Hour:kW)', 'loadPowerProfile', 'e.g. 0:2, 18:7, 24:2')}
                 {renderInput('Power Factor', 'loadPowerFactor', 'cosφ', 0.01, 0.1, 1.0)}
                 {renderSelect('Harmonic Type', 'loadHarmonicType', ['VFD', 'Rectifier', 'ArcFurnace', 'Clean'])}
                 {renderInput('Custom THD', 'loadTHD', '%', 1, 0, 100)}
@@ -223,8 +239,8 @@ export default function NodeParameterModal({
               <>
                 {renderInput('Filter Inductance', 'filterInductance', 'mH', 0.1, 0.1, 100)}
                 {renderInput('DC Link Capacitance', 'dcCapacitance', 'μF', 10, 100, 10000)}
-                {renderInput('Proportional Gain (Kp)', 'kp', 'gain', 0.1, 0, 50)}
-                {renderInput('Integral Gain (Ki)', 'ki', 'gain', 0.1, 0, 50)}
+                {renderInput('Proportional Gain (Kp)', 'kp', 'gain', 0.1, 0, 1000)}
+                {renderInput('Integral Gain (Ki)', 'ki', 'gain', 0.1, 0, 5000)}
               </>
             )}
             

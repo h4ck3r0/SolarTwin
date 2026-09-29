@@ -51,6 +51,7 @@ class SimulationParameters(BaseModel):
     windCutOut: float = 25.0
     windNominalPower: float = 50.0
     windInertiaTimeConst: float = 3.0      # seconds — rotor inertia lag constant
+    simulationMode: str = "EMT"
 
 
 class NodeData(BaseModel):
@@ -406,7 +407,7 @@ def emt_solver_loop(steps, dt, omega, v_base_peak,
 # Main simulation entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
-def run_simulation(req: SimulationRequest):
+def _run_emt_simulation(req: SimulationRequest):
     params = req.parameters
     duration = max(float(params.simulationDuration), 0.1)
     dt = 1e-4
@@ -597,12 +598,40 @@ def run_simulation(req: SimulationRequest):
         # No grid node in topology — fall back to global parameter
         actual_grid_connected = bool(params.isGridConnected)
 
+    # ── Aggregate Load nodes for EMT ─────────────────────────────────────────
+    total_load_kw = 0.0
+    weighted_pf = 0.0
+    weighted_thd = 0.0
+    found_load = False
+    
+    for node in req.topology.nodes:
+        if node.type == 'load' and node.id in connected_node_ids:
+            np_dict = node.data.parameters or {}
+            if np_dict.get('isTripped') in [True, 'true', 'True', 1, '1']:
+                continue
+            found_load = True
+            kw = float(np_dict.get('loadActivePower', params.loadActivePower))
+            pf = float(np_dict.get('loadPowerFactor', params.loadPowerFactor))
+            thd = float(np_dict.get('loadTHD', params.loadTHD))
+            total_load_kw += kw
+            weighted_pf += (kw * pf)
+            weighted_thd += (kw * thd)
+    
+    if found_load and total_load_kw > 0:
+        agg_pf = weighted_pf / total_load_kw
+        agg_thd = weighted_thd / total_load_kw
+    else:
+        # Default fallback if no valid load is found
+        total_load_kw = params.loadActivePower
+        agg_pf = params.loadPowerFactor
+        agg_thd = params.loadTHD
+
     # ── Run EMT solver ───────────────────────────────────────────────────────
     (time_arr, v_grid, i_grid, v_load, i_load,
      v_inj, i_inj, v_dc_arr, bsoc_arr) = emt_solver_loop(
         steps, dt, omega, v_base_peak,
-        params.loadActivePower, params.loadPowerFactor,
-        params.loadTHD / 100.0, h_mags,
+        total_load_kw, agg_pf,
+        agg_thd / 100.0, h_mags,
         params.filterInductance * 1e-3,
         params.dcCapacitance  * 1e-6,
         params.kp, params.ki,
@@ -671,3 +700,190 @@ def run_simulation(req: SimulationRequest):
 
     # FIX BUG-04: return ALL downsampled points (already ~2000), not a hard :500 slice
     return data_points
+
+
+def _run_ems_simulation(req: SimulationRequest):
+    params = req.parameters
+    # 24-hour simulation at 1-minute resolution
+    duration = 24.0 * 3600.0  # 86400 seconds
+    dt = 60.0  # 1 minute timestep
+    steps = int(duration / dt)
+
+    connected_node_ids = {edge.source for edge in req.topology.edges} | {edge.target for edge in req.topology.edges}
+
+    # 1. Parse solar nodes
+    is_solar_node = lambda n: any(kw in (n.type + " " + n.data.label).lower() for kw in ['solar', 'pv', 'microgrid', 'photovoltaic'])
+    solar_panels = []
+    for node in req.topology.nodes:
+        if is_solar_node(node) and node.id in connected_node_ids:
+            np_dict = node.data.parameters or {}
+            if np_dict.get('isTripped') in [True, 'true', 'True', 1, '1']: continue
+            solar_panels.append({
+                'strings': int(float(np_dict.get('solarStringsParallel', params.solarStringsParallel))),
+                'modules': int(float(np_dict.get('solarModulesSeries',   params.solarModulesSeries))),
+                'watts':   float(np_dict.get('solarPanelWatts', params.solarPanelWatts)),
+                'vmpp':    float(np_dict.get('solarVmpp',       params.solarVmpp)),
+            })
+    if not solar_panels:
+        solar_panels.append({
+            'strings': int(params.solarStringsParallel),
+            'modules': int(params.solarModulesSeries),
+            'watts':   float(params.solarPanelWatts),
+            'vmpp':    float(params.solarVmpp),
+        })
+
+    # EMS profiles are provided in hours (0 to 24)
+    irrad_pts = _parse_profile(params.irradianceProfile, params.solarIrradiance)
+    temp_pts  = _parse_profile(params.temperatureProfile, params.solarTemperature)
+
+    # 2. Parse load nodes
+    load_profiles = []
+    for node in req.topology.nodes:
+        if node.type == 'load' and node.id in connected_node_ids:
+            np_dict = node.data.parameters or {}
+            if np_dict.get('isTripped') in [True, 'true', 'True', 1, '1']: continue
+            pk = float(np_dict.get('loadActivePower', params.loadActivePower))
+            prof = str(np_dict.get('loadPowerProfile', f"0:{pk}, 24:{pk}"))
+            load_profiles.append(_parse_profile(prof, pk))
+    
+    if not load_profiles:
+        load_profiles.append(_parse_profile(f"0:{params.loadActivePower}, 24:{params.loadActivePower}", params.loadActivePower))
+
+    # 3. Battery configuration
+    battery_kwh = 0.0
+    soc = 100.0 # default if empty
+    found_battery = False
+    for node in req.topology.nodes:
+        if 'battery' in node.id.lower() or 'bess' in node.id.lower():
+            if node.id in connected_node_ids:
+                found_battery = True
+                battery_kwh = float(params.batteryCapacityKwh)
+                soc = float(params.batterySOC)
+            break
+    
+    if not found_battery and len(req.topology.nodes) == 0:
+        found_battery = True
+        battery_kwh = float(params.batteryCapacityKwh)
+        soc = float(params.batterySOC)
+    # 4. Grid Connection status
+    actual_grid_connected = False
+    found_grid_node = False
+    for node in req.topology.nodes:
+        if node.id not in connected_node_ids: continue
+        if any(kw in (node.id + " " + node.data.label).lower() for kw in ['grid', 'main', 'source']):
+            found_grid_node = True
+            np_dict = node.data.parameters or {}
+            if np_dict.get('isTripped') not in [True, 'true', 'True', 1, '1']:
+                actual_grid_connected = True
+                break
+    if not found_grid_node:
+        actual_grid_connected = bool(params.isGridConnected)
+
+    battery_ws = battery_kwh * 3600.0 * 1000.0 # Watt-seconds
+    current_ws = battery_ws * (soc / 100.0) if battery_ws > 0 else 0.0
+
+    data_points = []
+    is_blackout = False
+
+    for k in range(steps):
+        t_sec = k * dt
+        t_hour = t_sec / 3600.0
+        
+        # Solar Gen
+        G = _interp(irrad_pts, t_hour)
+        T = _interp(temp_pts, t_hour)
+        dT = T - 25.0
+        total_solar_w = 0.0
+        for p in solar_panels:
+            vmpp_m = p['vmpp']
+            impp_m = p['watts'] / vmpp_m if vmpp_m > 0 else 0.0
+            Vm_stc = vmpp_m * (1.0 - 0.003 * dT)
+            Im = impp_m * (G / 1000.0) * (1.0 + 0.0005 * dT)
+            Im = max(Im, 0.0)
+            Va_stc = max(Vm_stc, 1.0) * p['modules']
+            Ia = Im * p['strings']
+            total_solar_w += (Va_stc * Ia)
+            
+        # Total Load
+        total_load_kw = sum(_interp(lp, t_hour) for lp in load_profiles)
+        total_load_w = total_load_kw * 1000.0 if not is_blackout else 0.0
+
+        # Energy Balance (Watts)
+        net_w = total_solar_w - total_load_w
+        
+        # Battery Dispatch
+        if found_battery and battery_ws > 0 and not is_blackout:
+            if net_w > 0:
+                # Charge
+                charge_w = min(net_w, battery_ws * 0.5 / 3600.0) # max 0.5C charge rate
+                current_ws += charge_w * dt
+                net_w -= charge_w
+                if current_ws > battery_ws:
+                    net_w += (current_ws - battery_ws) / dt
+                    current_ws = battery_ws
+            elif net_w < 0:
+                # Discharge
+                discharge_w = min(-net_w, battery_ws * 1.0 / 3600.0) # max 1C discharge rate
+                if current_ws >= discharge_w * dt:
+                    current_ws -= discharge_w * dt
+                    net_w += discharge_w
+                else:
+                    net_w += (current_ws / dt)
+                    current_ws = 0.0
+            
+            soc = (current_ws / battery_ws) * 100.0
+        else:
+            soc = 0.0
+
+        grid_w = 0.0
+        if actual_grid_connected:
+            # What remains in net_w is grid import (< 0) or export (> 0)
+            grid_w = -net_w # positive means we import from grid
+        else:
+            if net_w < -1.0: # Deficit without grid
+                is_blackout = True
+                total_load_w = 0.0
+                total_solar_w = 0.0
+                grid_w = 0.0
+            elif net_w > 1.0: # Excess without grid (curtailment)
+                total_solar_w -= net_w
+
+        # Construct data point mapped onto existing schema
+        v_sys = 0.0 if is_blackout else 239.6
+        dp = SimulationDataPoint(
+            time=round(t_hour, 4), # time is in hours
+            gridVoltageA=v_sys, gridVoltageB=v_sys, gridVoltageC=v_sys,
+            gridCurrentA=round(grid_w, 2), gridCurrentB=0, gridCurrentC=0,
+            supplyVoltageA=v_sys, supplyVoltageB=v_sys, supplyVoltageC=v_sys,
+            loadCurrentA=round(total_load_w, 2), loadCurrentB=0, loadCurrentC=0,
+            injectingVoltageA=0, injectingVoltageB=0, injectingVoltageC=0,
+            injectingCurrentA=0, injectingCurrentB=0, injectingCurrentC=0,
+            dcLinkVoltage=700.0,
+            solarPowerWatts=round(total_solar_w, 2),
+            solarVoltageDc=525.0,
+            solarCurrentDc=round(total_solar_w / 525.0, 2) if total_solar_w > 0 else 0,
+            solarIrradiance=round(G, 2),
+            solarTemperature=round(T, 2),
+            batterySOC=round(soc, 4) if found_battery else None,
+            windPowerWatts=0.0,
+            igbtTemperature=35.0,
+        )
+        data_points.append(dp)
+
+    _backend_dir = os.path.dirname(os.path.abspath(__file__))
+    _root = os.path.dirname(_backend_dir)
+    results_path = os.path.join(_root, "full_simulation_results.json")
+    try:
+        with open(results_path, "w") as f:
+            json.dump([dp.model_dump() for dp in data_points], f)
+    except Exception:
+        pass
+
+    return data_points
+
+
+def run_simulation(req: SimulationRequest):
+    if req.parameters.simulationMode == "EMS":
+        return _run_ems_simulation(req)
+    else:
+        return _run_emt_simulation(req)

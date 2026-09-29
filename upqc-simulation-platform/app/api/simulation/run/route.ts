@@ -49,11 +49,11 @@ export async function POST(req: NextRequest) {
       windCutOut:       Number(p.windCutOut       ?? 25.0),
       windNominalPower: Number(p.windNominalPower ?? 50.0),
 
-      // BUG-M04 FIX: Sync simulationDuration fallback to match DEFAULT_PARAMETERS (0.05, not 0.3)
       simulationDuration: Number(p.simulationDuration ?? 0.05),
       irradianceProfile:  String(p.irradianceProfile  ?? '0:1000'),
       temperatureProfile: String(p.temperatureProfile ?? '0:25'),
       isTripped:          p.isTripped !== undefined ? Boolean(p.isTripped) : false,
+      simulationMode:     String(p.simulationMode ?? 'EMT'),
     };
 
     const topology = body.topology || { nodes: [], edges: [] };

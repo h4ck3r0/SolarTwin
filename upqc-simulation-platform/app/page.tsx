@@ -40,6 +40,7 @@ const DEFAULT_PARAMETERS: SimulationParameters = {
   ki: 50,
   isGridConnected: true,
   simulationDuration: 0.05,
+  simulationMode: 'EMT',
 };
 
 export default function WorkspacePage() {

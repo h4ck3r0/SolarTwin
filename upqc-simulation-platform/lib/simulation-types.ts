@@ -49,6 +49,7 @@ export interface SimulationParameters {
   irradianceProfile?: string;
   temperatureProfile?: string;
   isTripped?: boolean;
+  simulationMode?: 'EMT' | 'EMS';
 }
 
 export interface SimulationDataPoint {

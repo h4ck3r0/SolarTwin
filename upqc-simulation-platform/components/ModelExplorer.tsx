@@ -24,8 +24,8 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
     shunt: true,
   });
 
-  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
-    event.dataTransfer.setData('application/reactflow', JSON.stringify({ type: nodeType, label }));
+  const onDragStart = (event: React.DragEvent, nodeType: string, label: string, baseNodeId?: string) => {
+    event.dataTransfer.setData('application/reactflow', JSON.stringify({ type: nodeType, label, baseNodeId }));
     event.dataTransfer.effectAllowed = 'move';
   };
 
@@ -76,7 +76,16 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
           { id: 'shunt-inv', name: 'IGBT Shunt Inverter', nodeId: 'shunt-inv' },
         ],
       },
-      { id: 'diode', name: 'Diode Rectifier', nodeId: 'diode-rectifier' },
+      {
+        id: 'loads',
+        name: 'Electrical Loads',
+        children: [
+          { id: 'load-residential', name: '🏠 Residential Load', nodeId: 'load-residential' },
+          { id: 'load-ev', name: '🚗 EV Charger Load', nodeId: 'load-ev' },
+          { id: 'load-industrial', name: '🏭 Industrial Load', nodeId: 'load-industrial' },
+          { id: 'diode', name: '⚡ Diode Rectifier', nodeId: 'diode-rectifier' },
+        ],
+      },
     ],
   };
 
@@ -97,7 +106,7 @@ export default function ModelExplorer({ selectedNodeId, onSelectItem }: ModelExp
       <div key={item.id} className="select-none">
         <div
           onClick={() => item.nodeId && onSelectItem(item.nodeId)}
-          onDragStart={(event) => item.nodeId ? onDragStart(event, item.nodeId === 'microgrid' ? 'microgrid' : 'electrical', item.name) : undefined}
+          onDragStart={(event) => item.nodeId ? onDragStart(event, item.nodeId === 'microgrid' ? 'microgrid' : 'electrical', item.name, item.nodeId) : undefined}
           draggable={!!item.nodeId}
           className={`flex items-center py-1.5 px-2 hover:bg-slate-50 cursor-pointer text-xs font-mono transition-colors ${
             isSelected ? 'bg-sky-50 border-r-2 border-sky-400 text-sky-700 font-bold' : 'text-slate-700'

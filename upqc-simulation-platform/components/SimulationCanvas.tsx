@@ -302,7 +302,7 @@ export default function SimulationCanvas({
       const typeData = event.dataTransfer.getData('application/reactflow');
       if (!typeData) return;
 
-      const { type, label } = JSON.parse(typeData);
+      const { type, label, baseNodeId } = JSON.parse(typeData);
 
       // FIX BUG-11: screenToFlowPosition() replaces deprecated project().
       // Takes raw screen coords directly — no bounding rect subtraction needed.
@@ -311,12 +311,22 @@ export default function SimulationCanvas({
         y: event.clientY,
       });
 
+      const isLoad = baseNodeId?.startsWith('load-') || baseNodeId === 'diode-rectifier';
+      
       const newNode = {
-        id: `node_${new Date().getTime()}`,
+        id: baseNodeId ? `${baseNodeId}_${new Date().getTime()}` : `node_${new Date().getTime()}`,
         // FIX BUG-F05: Default to 'electrical' if type is not in registered nodeTypes
         type: ['electrical', 'control', 'microgrid', 'scope'].includes(type) ? type : 'electrical',
         position,
-        data: { label, type, details: 'Dynamically added component' },
+        data: { 
+          label, 
+          type: isLoad ? 'load' : type, 
+          details: 'Dynamically added component',
+          parameters: isLoad ? { 
+            loadActivePower: baseNodeId === 'load-ev' ? 7 : (baseNodeId === 'load-industrial' ? 50 : 3),
+            loadPowerProfile: baseNodeId === 'load-ev' ? '0:0, 18:7, 22:7, 23:0' : (baseNodeId === 'load-industrial' ? '0:50, 24:50' : '0:3, 8:4, 18:5, 24:3')
+          } : undefined
+        },
       };
 
       setNodes((nds) => nds.concat(newNode));
