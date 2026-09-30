@@ -20,37 +20,38 @@ class SimulationParameters(BaseModel):
     microgridFrequency: float = 50.0
     solarIrradiance: float = 1000.0
     solarTemperature: float = 25.0
-    ambientTemperature: float = 35.0        # FIX BUG-05: outdoor air temp for IGBT heatsink
-    solarStringsParallel: int = 88
+    ambientTemperature: float = 35.0
+    solarStringsParallel: int = 10          # FIX: was 88 — synced to frontend DEFAULT
     solarModulesSeries: int = 7
     solarPanelWatts: float = 415.0
     solarVmpp: float = 34.1
-    mpptAlgorithm: str = "PandO"            # "PandO", "INC", "Fixed"
-    mpptStepSize: float = 0.5              # V — perturbation step for P&O
-    mpptUpdateFreq: int = 100              # steps between MPPT perturbations
+    mpptAlgorithm: str = "PandO"
+    mpptStepSize: float = 0.5
+    mpptUpdateFreq: int = 100
     batterySOC: float = 80.0
-    batteryCapacityKwh: float = 100.0
+    batteryCapacityKwh: float = 500.0       # FIX: was 100 — synced to frontend DEFAULT
     dcLinkVoltage: float = 700.0
     isGridConnected: bool = True
-    simulationDuration: float = 0.300
+    simulationDuration: float = 0.05        # FIX: was 0.3 — synced to frontend DEFAULT
     irradianceProfile: str = "0:1000"
     temperatureProfile: str = "0:25"
-    gridResistance: float = 0.1
-    gridReactance: float = 0.2             # FIX: now actually used in EMT loop
-    loadActivePower: float = 15.0
+    gridResistance: float = 0.01            # FIX: was 0.1 — synced to frontend DEFAULT
+    gridReactance: float = 0.05            # FIX: was 0.2 — synced to frontend DEFAULT
+    loadActivePower: float = 10.0           # FIX: was 15.0 — synced to frontend DEFAULT
     loadPowerFactor: float = 0.85
     loadHarmonicType: str = "Rectifier"
-    filterInductance: float = 2.5
-    dcCapacitance: float = 2200.0
+    loadPowerProfile: str = ""              # FIX: new field — 24h EMS load profile
+    filterInductance: float = 5.0           # FIX: was 2.5 — synced to frontend DEFAULT
+    dcCapacitance: float = 50000.0          # FIX: was 2200 — synced to frontend DEFAULT (μF)
     loadTHD: float = 28.0
-    kp: float = 0.5                        # FIX BUG-03: now wired into PI controllers
-    ki: float = 10.0
+    kp: float = 5.0                        # FIX: was 0.5 — synced to frontend DEFAULT
+    ki: float = 50.0                       # FIX: was 10.0 — synced to frontend DEFAULT
     isTripped: bool = False
     windSpeed: float = 8.0
     windCutIn: float = 3.0
     windCutOut: float = 25.0
     windNominalPower: float = 50.0
-    windInertiaTimeConst: float = 3.0      # seconds — rotor inertia lag constant
+    windInertiaTimeConst: float = 3.0
     simulationMode: str = "EMT"
 
 
@@ -118,16 +119,19 @@ class SimulationDataPoint(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class MPPTState:
-    """Per-panel P&O MPPT tracker."""
-    def __init__(self, vmpp_init: float, step: float = 0.5, freq: int = 100):
+    """Per-panel MPPT tracker. Supports P&O and Incremental Conductance (INC) algorithms."""
+    def __init__(self, vmpp_init: float, step: float = 0.5, freq: int = 100, algorithm: str = "PandO"):
         self.v_ref = float(vmpp_init)
         self.step = float(step)
         self.freq = int(freq)
+        self.algorithm = algorithm.strip().upper()
         self.p_prev = 0.0
         self.v_prev = float(vmpp_init)
+        self.i_prev = 0.0   # needed for INC
         self.counter = 0
 
     def perturb_observe(self, v: float, p: float) -> float:
+        """Classic P&O: perturbs voltage and observes power change."""
         self.counter += 1
         if self.counter < self.freq:
             return self.v_ref
@@ -142,6 +146,49 @@ class MPPTState:
         self.p_prev = p
         self.v_prev = v
         return max(self.v_ref, 1.0)
+
+    def incremental_conductance(self, v: float, i: float) -> float:
+        """
+        FIX Phase 4.4: Incremental Conductance (INC) MPPT algorithm.
+        Condition at MPP: dI/dV = -I/V  →  I + V·(dI/dV) = 0
+        Converges faster than P&O and eliminates steady-state oscillation.
+        """
+        self.counter += 1
+        if self.counter < self.freq:
+            return self.v_ref
+        self.counter = 0
+
+        dv = v - self.v_prev
+        di = i - self.i_prev
+        self.v_prev = v
+        self.i_prev = i
+
+        if abs(dv) < 1e-6:
+            # Voltage unchanged: check if at MPP
+            if abs(di) < 1e-6:
+                pass  # At MPP — no adjustment needed
+            elif di > 0:
+                self.v_ref += self.step   # Left of MPP
+            else:
+                self.v_ref -= self.step   # Right of MPP
+        else:
+            inc_cond = di / dv           # dI/dV
+            inst_cond = -i / v if abs(v) > 1e-6 else 0.0  # -I/V
+            if abs(inc_cond - inst_cond) < 1e-4:
+                pass  # At MPP
+            elif inc_cond > inst_cond:
+                self.v_ref += self.step   # Left of MPP — increase voltage
+            else:
+                self.v_ref -= self.step   # Right of MPP — decrease voltage
+
+        return max(self.v_ref, 1.0)
+
+    def update(self, v: float, p: float, i: float = 0.0) -> float:
+        """Dispatch to the selected algorithm."""
+        if self.algorithm in ("INC", "INCREMENTAL", "INCREMENTALCONDUCTANCE"):
+            return self.incremental_conductance(v, i)
+        return self.perturb_observe(v, p)
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -467,8 +514,14 @@ def _run_emt_simulation(req: SimulationRequest):
 
     # Create one MPPT tracker per panel (P&O algorithm)
     use_mppt = params.mpptAlgorithm.strip().upper() not in ("FIXED", "")
+    mppt_algo = params.mpptAlgorithm.strip() if use_mppt else "PandO"
     mppt_trackers = [
-        MPPTState(p['vmpp'] * p['modules'], step=params.mpptStepSize, freq=params.mpptUpdateFreq)
+        MPPTState(
+            p['vmpp'] * p['modules'],
+            step=params.mpptStepSize,
+            freq=params.mpptUpdateFreq,
+            algorithm=mppt_algo,   # FIX Phase 4.4: pass algorithm to tracker
+        )
         for p in solar_panels
     ]
 
@@ -505,11 +558,10 @@ def _run_emt_simulation(req: SimulationRequest):
             P_stc  = Va_stc * Ia
 
             if use_mppt and k > 0:
-                # P&O MPPT: tracker adjusts v_ref per step
-                v_ref = mppt_trackers[idx].perturb_observe(Va_stc, P_stc)
-                # Scale actual power to MPPT operating point (linear approx)
+                # FIX Phase 4.4: use .update() dispatch — handles both P&O and INC
+                v_ref = mppt_trackers[idx].update(Va_stc, P_stc, i=Ia)
                 Va = min(v_ref, Va_stc)
-                Pa = Va * Ia  # simplified: current unchanged, voltage tracked
+                Pa = Va * Ia
             else:
                 Va = Va_stc
                 Pa = P_stc

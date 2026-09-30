@@ -8,6 +8,7 @@ import ModelExplorer from '@/components/ModelExplorer';
 import SimulationCanvas from '@/components/SimulationCanvas';
 import ParameterPanel from '@/components/ParameterPanel';
 import SolarPVTelemetryCard from '@/components/SolarPVTelemetryCard';
+import SimulationStatusWidget from '@/components/SimulationStatus';
 import Link from 'next/link';
 import { CheckCircle2, X } from 'lucide-react';
 import { SimulationParameters, SimulationDataPoint, SimulationStatus } from '@/lib/simulation-types';
@@ -96,25 +97,50 @@ export default function WorkspacePage() {
 
     abortControllerRef.current = new AbortController();
 
-    const finalSimTime = parameters.simulationDuration ?? 0.3;
-    const runDurationMs = Math.max(2500, finalSimTime * 8000);
-    const incrementInterval = 50;
-    const timeStep = finalSimTime / (runDurationMs / incrementInterval);
+    const finalSimTime = parameters.simulationDuration ?? 0.05;
 
-    timerIntervalRef.current = setInterval(() => {
-      setSimulationTime((prev) => {
-        const next = prev + timeStep;
-        return next >= finalSimTime ? finalSimTime : next;
-      });
-    }, incrementInterval);
+    // FIX Phase 4.3: Poll real solver /status instead of fake timer
+    const pollStatus = async () => {
+      try {
+        const res = await fetch('/api/simulation/status');
+        const s = await res.json();
+        if (s.running && s.progress > 0) {
+          setSimulationTime(s.progress * finalSimTime);
+        }
+      } catch { /* backend not responding yet — ignore */ }
+    };
+
+    timerIntervalRef.current = setInterval(pollStatus, 200);
 
     try {
+      const topo = getTopologyRef.current?.() || { nodes: [], edges: [] };
+
+      // ── FIX: Merge node-specific parameters into global params ───────────────
+      // When a node has per-node overrides (set via NodeParameterModal), those
+      // values should take precedence over the global panel for that run.
+      // Strategy: start from global params, then layer each connected node's params on top.
+      let mergedParameters: SimulationParameters = { ...parameters };
+      for (const node of topo.nodes) {
+        const nodeParams = node.data?.parameters;
+        if (nodeParams && typeof nodeParams === 'object') {
+          // Only merge numeric/string fields that are actual SimulationParameters keys
+          for (const [key, val] of Object.entries(nodeParams)) {
+            if (val !== undefined && val !== null && val !== '') {
+              (mergedParameters as any)[key] = val;
+            }
+          }
+        }
+      }
+
+      // Save the exact params used for this run so statistics/insights pages see the same values
+      localStorage.setItem('solar_twin_params', JSON.stringify(mergedParameters));
+
       const response = await fetch('/api/simulation/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          parameters,
-          topology: getTopologyRef.current?.() || { nodes: [], edges: [] }
+          parameters: mergedParameters,
+          topology: topo,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -130,15 +156,13 @@ export default function WorkspacePage() {
         setStatus('COMPLETED');
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         setSimulationTime(finalSimTime);
-        
-        // Save to localStorage for statistics page
+
+        // Save results and topology for statistics/insights pages
         localStorage.setItem('simulation_results', JSON.stringify(result.dataPoints));
-        // Save the topology connected-node IDs so insights page can check battery connection
-        const topoIds = [...(getTopologyRef.current?.().edges ?? [])].flatMap((e: any) => [e.source, e.target]);
+        const topoIds = topo.edges.flatMap((e: any) => [e.source, e.target]);
         localStorage.setItem('simulation_topology_ids', JSON.stringify([...new Set(topoIds)]));
-        // FIX BUG-F01: Show success banner instead of auto-redirecting
         setShowSuccessBanner(true);
-        
+
       } else {
         throw new Error(result.message || 'Simulation execution failed.');
       }
@@ -198,6 +222,9 @@ export default function WorkspacePage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-[#F8FAFC] text-slate-900 overflow-hidden font-mono select-none">
+      {/* FIX M6: Wire previously-unused SimulationStatus widget during RUNNING state */}
+      <SimulationStatusWidget status={status} />
+
       {/* FIX BUG-F01: Success toast banner */}
       {showSuccessBanner && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-emerald-900 border border-emerald-500/50 text-emerald-100 px-5 py-3 rounded-xl shadow-2xl shadow-emerald-900/50 animate-in">

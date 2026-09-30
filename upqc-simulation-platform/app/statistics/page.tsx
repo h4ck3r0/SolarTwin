@@ -10,8 +10,11 @@ import Link from 'next/link';
 import {
   ArrowLeft, Activity, Download, ChevronRight, AlertTriangle,
   ZapOff, CheckCircle2, TrendingDown, Lightbulb, X,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, BrainCircuit,
 } from 'lucide-react';
+import { analyzeLogic, LogicState } from '@/lib/logic-analyzer';
+import LogicFlowTimeline from '@/components/LogicFlowTimeline';
+import PlainEnglishCards from '@/components/PlainEnglishCards';
 
 // ─── Colour helpers ──────────────────────────────────────────────────────────
 const STATUS_OK      = { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', dot: 'bg-emerald-400' };
@@ -134,6 +137,12 @@ export default function StatisticsPage() {
   const [params, setParams] = useState<SimulationParameters | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedChart, setExpandedChart] = useState<any>(null); // For full-screen graph
+
+  // Derived logic state (PlainEnglishCards + LogicFlowTimeline) — FIX C1 / Phase 3
+  const logic = useMemo<LogicState | null>(() => {
+    if (data.length === 0 || !params) return null;
+    return analyzeLogic(data, params);
+  }, [data, params]);
 
   // Downsample data for rendering so recharts doesn't freeze/mess up on 10s+ simulations
   const chartData = useMemo(() => {
@@ -438,6 +447,21 @@ export default function StatisticsPage() {
       <div className="mb-8 space-y-3">
         {diags.map(d => <DiagnosticCard key={d.id} diag={d} />)}
       </div>
+
+      {/* ── AI Logic Breakdown — FIX C1 / Phase 3: wire previously-unused components ── */}
+      {logic && (
+        <div className="mb-10">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="w-1 h-4 bg-indigo-500 rounded" />
+            <BrainCircuit className="w-4 h-4 text-indigo-500" />
+            AI Logic Breakdown
+          </h2>
+          <div className="mb-6">
+            <PlainEnglishCards logic={logic} />
+          </div>
+          <LogicFlowTimeline logic={logic} />
+        </div>
+      )}
 
       {/* Chart Zones */}
       {params?.simulationMode !== 'EMS' ? (

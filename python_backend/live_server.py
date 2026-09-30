@@ -13,9 +13,12 @@ import joblib
 import math
 import numpy as np
 import torch
-import torch.nn as nn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# FIX C5: Import LSTMModel from the canonical shared module instead of redefining it inline.
+# This ensures live_server and training code always use the same architecture.
+from lstm_model import LSTMModel
 
 # ── Resolve paths relative to this file so the server works regardless of CWD ──
 # FIX BUG-16: use __file__ for all asset paths
@@ -46,30 +49,7 @@ ALL_INPUT_COLS = EXO_COLS + TARGET_COLS
 MAX_HISTORY = 3600   # keep 1 hour (or 3600 ticks) of history
 
 
-# ── LSTM model definition ─────────────────────────────────────────────────────
-
-class LSTMModel(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, output_size):
-        super(LSTMModel, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers  = num_layers
-        self.lstm = nn.LSTM(
-            input_size, hidden_size, num_layers,
-            batch_first=True,
-            dropout=0.2 if num_layers > 1 else 0,
-        )
-        self.fc1  = nn.Linear(hidden_size, hidden_size // 2)
-        self.relu = nn.ReLU()
-        self.fc2  = nn.Linear(hidden_size // 2, output_size)
-
-    def forward(self, x):
-        out, _ = self.lstm(x)
-        out = out[:, -1, :]
-        out = self.fc1(out)
-        out = self.relu(out)
-        out = self.fc2(out)
-        return out
-
+# LSTMModel is now imported from lstm_model.py — see import above (FIX C5)
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 

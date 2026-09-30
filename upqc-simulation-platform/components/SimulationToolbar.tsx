@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, Square, RotateCcw, ZoomIn, ZoomOut, Maximize, LineChart as ChartIcon, Activity } from 'lucide-react';
+import { Play, Square, RotateCcw, ZoomIn, ZoomOut, LineChart as ChartIcon, Activity, BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
 import { SimulationStatus, SimulationParameters } from '@/lib/simulation-types';
 
@@ -32,12 +32,12 @@ export default function SimulationToolbar({
   const pvBadge = parameters
     ? (() => {
         const s = parameters.solarModulesSeries ?? 7;
-        const p = parameters.solarStringsParallel ?? 88;
+        const p = parameters.solarStringsParallel ?? 10; // FIX M2: was ?? 88 (stale crash default)
         const w = parameters.solarPanelWatts ?? 415;
         const kw = ((s * p * w) / 1000).toFixed(1);
         return `${s}S×${p}P ${w}W PV (${kw} kW)`;
       })()
-    : '7S×88P 415W PV (255.6 kW)';
+    : '7S×10P 415W PV (29.1 kW)';
   return (
     <div className="h-12 sm:h-14 border-b border-slate-200 bg-white text-slate-800 flex items-center justify-between px-3 sm:px-4 select-none font-mono text-xs sm:text-sm">
       {/* Title & Branding */}
@@ -108,6 +108,14 @@ export default function SimulationToolbar({
         >
           <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           <span>Live</span>
+        </Link>
+
+        <Link
+          href="/insights"
+          className="flex items-center space-x-1 sm:space-x-1.5 px-3 py-1 sm:px-4 sm:py-1.5 rounded text-xs sm:text-sm font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm transition-all"
+        >
+          <BrainCircuit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span>Insights</span>
         </Link>
 
         <div className="w-px h-6 bg-slate-200 mx-1 sm:mx-2" />

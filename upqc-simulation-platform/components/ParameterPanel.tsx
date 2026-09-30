@@ -39,23 +39,31 @@ export default function ParameterPanel({
     }));
   };
 
-  const handleApply = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleApply = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     const finalParams: any = { ...localParams };
+    // Fields that must stay as strings — never coerce to number
+    const STRING_FIELDS = new Set([
+      'loadHarmonicType', 'mpptAlgorithm', 'simulationMode',
+      'irradianceProfile', 'temperatureProfile', 'loadPowerProfile',
+    ]);
+    // Fields that must stay as booleans
+    const BOOL_FIELDS = new Set(['isGridConnected', 'isTripped']);
     for (const k in finalParams) {
+      if (STRING_FIELDS.has(k)) continue;
+      if (BOOL_FIELDS.has(k)) {
+        if (typeof finalParams[k] === 'string') finalParams[k] = finalParams[k] === 'true';
+        continue;
+      }
       if (typeof finalParams[k] === 'string') {
-        if (finalParams[k] === '') {
-            finalParams[k] = 0;
-        } else {
-            const parsed = Number(finalParams[k]);
-            if (!isNaN(parsed)) finalParams[k] = parsed;
-        }
+        if (finalParams[k] === '') finalParams[k] = 0;
+        else { const n = Number(finalParams[k]); if (!isNaN(n)) finalParams[k] = n; }
       }
     }
     if (selectedNodeId && onApplyNode) {
-        onApplyNode(selectedNodeId, finalParams);
+      onApplyNode(selectedNodeId, finalParams);
     } else {
-        onApply(finalParams as SimulationParameters);
+      onApply(finalParams as SimulationParameters);
     }
   };
 
@@ -329,7 +337,7 @@ export default function ParameterPanel({
 
         <button
           type="button"
-          onClick={handleApply}
+          onClick={(e) => handleApply(e)}
           className="flex items-center justify-center space-x-1.5 px-3 py-2 rounded text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold border border-emerald-400/50 shadow-md transition-all duration-150 active:scale-95"
         >
           <Check className="w-3.5 h-3.5" />

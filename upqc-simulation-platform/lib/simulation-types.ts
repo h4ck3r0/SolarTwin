@@ -36,6 +36,7 @@ export interface SimulationParameters {
   loadPowerFactor?: number;
   loadHarmonicType?: string;
   loadTHD?: number;
+  loadPowerProfile?: string;   // EMS 24h load profile — format: "hour:kW, hour:kW"
 
   // Wind
   windSpeed?: number;

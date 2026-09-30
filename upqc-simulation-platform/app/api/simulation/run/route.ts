@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       loadPowerFactor:  Number(p.loadPowerFactor  ?? 0.85),
       loadHarmonicType: String(p.loadHarmonicType ?? 'Rectifier'),
       loadTHD:          Number(p.loadTHD          ?? 28),
+      loadPowerProfile: String(p.loadPowerProfile ?? ''),
 
       // Wind
       windSpeed:        Number(p.windSpeed        ?? 8.0),
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
       irradianceProfile:  String(p.irradianceProfile  ?? '0:1000'),
       temperatureProfile: String(p.temperatureProfile ?? '0:25'),
       isTripped:          p.isTripped !== undefined ? Boolean(p.isTripped) : false,
-      simulationMode:     String(p.simulationMode ?? 'EMT'),
+      simulationMode:     (String(p.simulationMode ?? 'EMT')) as 'EMT' | 'EMS',
     };
 
     const topology = body.topology || { nodes: [], edges: [] };

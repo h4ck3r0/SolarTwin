@@ -17,17 +17,31 @@ export default function LivePredictionDashboard() {
   const [current, setCurrent] = useState<any>(null);
   const [historyLimit, setHistoryLimit] = useState<number>(60);
 
+  const [isOffline, setIsOffline] = useState(false);
+
   useEffect(() => {
     const fetchLiveData = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/live_data");
+        // FIX C4: Use Next.js API proxy (/api/live) instead of fetching localhost:8000
+        // directly from the browser — avoids CORS errors in production.
+        const res = await fetch("/api/live");
         const data = await res.json();
-        
+
+        if (data.error || !data.current) {
+          setIsOffline(true);
+          return;
+        }
+        setIsOffline(false);
+
+        // FIX: Only multiply THD by 100 when values are fractional (LSTM outputs 0..1 range).
+        // If already > 1 (percent scale), leave as-is to prevent double-scaling.
         const processData = (point: any) => {
           if (!point) return point;
           const newPoint = { ...point };
           for (const key in newPoint) {
-            if (key.includes("THD")) newPoint[key] = newPoint[key] * 100;
+            if (key.includes("THD") && typeof newPoint[key] === 'number' && newPoint[key] <= 1.0) {
+              newPoint[key] = newPoint[key] * 100;
+            }
           }
           return newPoint;
         };
@@ -36,6 +50,7 @@ export default function LivePredictionDashboard() {
         if (data.current) setCurrent(processData(data.current));
       } catch (err) {
         console.error("Failed to fetch live data", err);
+        setIsOffline(true);
       }
     };
 
@@ -91,8 +106,8 @@ export default function LivePredictionDashboard() {
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className={`text-2xl font-black tracking-tight ${isWarning ? 'text-rose-600' : 'text-slate-800'}`}>
-            // FE-R3 FIX: was `currentValue ?` — falsy check fails when value is legitimately 0 (e.g. no solar at night)
-            {currentValue != null ? currentValue.toFixed(2) : "0.00"}
+              {/* FE-R3 FIX: was `currentValue ?` — falsy check fails when value is legitimately 0 (e.g. no solar at night) */}
+              {currentValue != null ? currentValue.toFixed(2) : "0.00"}
             </span>
             <span className="text-slate-400 font-bold text-xs">{unit}</span>
           </div>
@@ -137,6 +152,15 @@ export default function LivePredictionDashboard() {
             <h1 className="text-3xl font-extrabold flex items-center gap-3 tracking-tight text-slate-900">
               <Activity className="w-8 h-8 text-sky-500" />
               Live Forecasting Matrix
+              {/* Connection status dot */}
+              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${
+                isOffline
+                  ? 'bg-rose-50 border-rose-200 text-rose-600'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${isOffline ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
+                {isOffline ? 'Offline' : 'Live'}
+              </span>
             </h1>
             <p className="text-slate-500 mt-2 text-sm max-w-2xl leading-relaxed">
               Real-time inference using the trained PyTorch LSTM model. Predicting grid states based on live weather data from RNSIT College, Bangalore.

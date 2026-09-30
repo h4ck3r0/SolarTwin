@@ -38,14 +38,20 @@ export default function NodeParameterModal({
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
     const finalParams: any = { ...localParams };
+    const STRING_FIELDS = new Set([
+      'loadHarmonicType', 'mpptAlgorithm', 'simulationMode',
+      'irradianceProfile', 'temperatureProfile', 'loadPowerProfile',
+    ]);
+    const BOOL_FIELDS = new Set(['isGridConnected', 'isTripped']);
     for (const k in finalParams) {
+      if (STRING_FIELDS.has(k)) continue;
+      if (BOOL_FIELDS.has(k)) {
+        if (typeof finalParams[k] === 'string') finalParams[k] = finalParams[k] === 'true';
+        continue;
+      }
       if (typeof finalParams[k] === 'string') {
-        if (finalParams[k] === '') {
-            finalParams[k] = 0;
-        } else {
-            const parsed = Number(finalParams[k]);
-            if (!isNaN(parsed)) finalParams[k] = parsed;
-        }
+        if (finalParams[k] === '') finalParams[k] = 0;
+        else { const n = Number(finalParams[k]); if (!isNaN(n)) finalParams[k] = n; }
       }
     }
     onApply(nodeId, finalParams);
@@ -166,12 +172,12 @@ export default function NodeParameterModal({
         {/* Left Side: Component Image & Identity */}
         <div className="bg-slate-50 sm:w-2/5 border-b sm:border-b-0 sm:border-r border-slate-200 p-6 flex flex-col items-center justify-center space-y-4">
           <div className="w-40 h-40 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center justify-center p-2 relative overflow-hidden">
-            {isSolar && <Image src="/solar.jpg" alt="Solar Array" layout="fill" objectFit="contain" />}
+            {isSolar && <Image src="/solar.jpg" alt="Solar Array" fill style={{ objectFit: 'contain' }} />}
             {isGrid && <Zap className="w-20 h-20 text-sky-500" />}
             {isLoad && <Factory className="w-20 h-20 text-rose-500" />}
             {isUPQC && <Activity className="w-20 h-20 text-purple-500" />}
             {isBattery && <Battery className="w-20 h-20 text-emerald-500" />}
-            {isWind && <Image src="/wind.jpg" alt="Wind Turbine" layout="fill" objectFit="contain" />}
+            {isWind && <Image src="/wind.jpg" alt="Wind Turbine" fill style={{ objectFit: 'contain' }} />}
             {isMPPT && <Cpu className="w-20 h-20 text-amber-500" />}
             {!isSolar && !isGrid && !isLoad && !isUPQC && !isBattery && !isWind && !isMPPT && <div className="text-slate-300 text-6xl">?</div>}
           </div>
