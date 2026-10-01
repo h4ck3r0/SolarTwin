@@ -9,6 +9,7 @@ import SimulationCanvas from '@/components/SimulationCanvas';
 import ParameterPanel from '@/components/ParameterPanel';
 import SolarPVTelemetryCard from '@/components/SolarPVTelemetryCard';
 import SimulationStatusWidget from '@/components/SimulationStatus';
+import AIAssistantPanel from '@/components/AIAssistantPanel';
 import Link from 'next/link';
 import { CheckCircle2, X } from 'lucide-react';
 import { SimulationParameters, SimulationDataPoint, SimulationStatus } from '@/lib/simulation-types';
@@ -321,6 +322,7 @@ export default function WorkspacePage() {
           }}
           onReset={handleResetParameters}
         />
+        <AIAssistantPanel parameters={parameters} />
       </div>
     </div>
   );

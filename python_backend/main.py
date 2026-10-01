@@ -4,12 +4,21 @@ Fixes: BUG-17 (model_dump vs dict), Phase 4.5 (non-blocking async executor).
 """
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
+from pydantic import BaseModel
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from power_solver import SimulationRequest, run_simulation
+
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+if api_key:
+    genai.configure(api_key=api_key)
 
 app = FastAPI(title="SolarTwin EMT Solver API")
 
@@ -80,6 +89,20 @@ async def status():
 async def health():
     """Liveness probe for Docker / k8s."""
     return {"status": "ok"}
+
+
+class AgentRequest(BaseModel):
+    state: dict
+
+@app.post("/api/agent/analyze")
+async def analyze_state(req: AgentRequest):
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        prompt = f"You are an expert microgrid operator. Analyze the following microgrid state and provide a short, actionable recommendation (max 3 sentences). Here is the telemetry state: {req.state}"
+        response = model.generate_content(prompt)
+        return {"success": True, "advice": response.text}
+    except Exception as e:
+        return {"success": False, "advice": f"Error communicating with AI: {str(e)}"}
 
 
 if __name__ == "__main__":

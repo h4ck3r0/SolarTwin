@@ -42,6 +42,7 @@ The platform enables real-time dynamic analysis, telemetry monitoring, interacti
 - **⚡ Custom EMT Physics Engine**: High-fidelity Python solver (`power_solver.py`) utilizing **Runge-Kutta (RK4)** numerical integration for sub-millisecond electrical transients, MPPT tracking, and dynamic PI-controller loops.
 - **🔋 Battery & Energy Storage**: Real-time integration of battery capacity and State of Charge (SOC) physics. 
 - **🤖 Deep Learning Surrogate (LSTM)**: 3-layer PyTorch LSTM model trained on high-fidelity simulation sweeps (MATLAB/Simulink ground truth) predicting system stability and power quality metrics.
+- **🤖 Agentic AI Assistant**: Built-in Gemini LLM integration providing real-time, actionable optimization advice based on live microgrid telemetry.
 - **🌤️ Live Weather Sync**: Integrates with live meteorological APIs to automatically populate real-world irradiance, temperature, and wind speed data into the digital twin.
 - **📊 Diagnostic Dashboard**: Recharts-powered oscilloscope-style charts rendering high-resolution telemetry of 3-phase voltages, currents, harmonics, and DC-link stability, complete with full-screen expandable views.
 
@@ -71,7 +72,7 @@ SolarTwin/
 
 - **Physics Simulation**: Custom Python EMT Solver (Numpy, SciPy), Runge-Kutta (RK4)
 - **Backend**: Python 3.10+, FastAPI, Uvicorn
-- **Machine Learning**: PyTorch, Scikit-Learn, Pandas, Joblib
+- **Machine Learning & AI**: PyTorch, Scikit-Learn, Pandas, Joblib, Google Generative AI (Gemini)
 - **Frontend / Dashboard**: Next.js 15, React 19, TypeScript, Tailwind CSS, React Flow, Recharts, Lucide Icons
 
 ---
@@ -91,7 +92,7 @@ git clone https://github.com/h4ck3r0/SolarTwin.git
 cd SolarTwin
 
 # Install Python backend dependencies
-pip install fastapi uvicorn torch pandas numpy scikit-learn joblib
+pip install fastapi uvicorn torch pandas numpy scikit-learn joblib google-generativeai python-dotenv
 
 # Install Frontend dependencies
 cd upqc-simulation-platform
@@ -99,7 +100,15 @@ npm install
 cd ..
 ```
 
-### 3. Running the Platform
+### 3. Environment Setup
+
+To enable the Agentic AI Assistant, create a `.env` file in the root directory and add your Gemini API key:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+### 4. Running the Platform
 
 To launch both the Python backend simulation server and the Next.js frontend simultaneously, run the orchestration script from the root directory:
 
